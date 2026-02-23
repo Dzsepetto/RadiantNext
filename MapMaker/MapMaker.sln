@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.36930.0 d17.14
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MapMaker.Core", "MapMaker\MapMaker.Core.csproj", "{D6FFCC0E-6BD4-44C2-B129-5A82B5485C10}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MapMaker.Tests", "MapMaker.Tests\MapMaker.Tests.csproj", "{8E27B353-A1FC-42B6-A077-C06167BC381D}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{D6FFCC0E-6BD4-44C2-B129-5A82B5485C10}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D6FFCC0E-6BD4-44C2-B129-5A82B5485C10}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D6FFCC0E-6BD4-44C2-B129-5A82B5485C10}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D6FFCC0E-6BD4-44C2-B129-5A82B5485C10}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8E27B353-A1FC-42B6-A077-C06167BC381D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8E27B353-A1FC-42B6-A077-C06167BC381D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8E27B353-A1FC-42B6-A077-C06167BC381D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8E27B353-A1FC-42B6-A077-C06167BC381D}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {86AC5CAC-93F2-4A1E-A354-694314E0777B}
+	EndGlobalSection
+EndGlobal
