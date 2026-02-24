@@ -87,5 +87,68 @@ namespace MapMaker.Tests
             var inward = brush.AreNormalsFacingInward();
             Assert.Equal(8, vertices.Count);
         }
+        [Fact]
+        public void Box_ShouldGeneratePolygonsWithFourVertices()
+        {
+            var brush = BrushFactory.CreateBox(
+                new Vector3(0, 0, 0),
+                new Vector3(128, 128, 128),
+                "caulk");
+
+            brush.GenerateFacePolygons();
+
+            foreach (var face in brush.Faces)
+            {
+                Assert.NotNull(face.Polygon);
+                Assert.Equal(4, face.Polygon.Vertices.Count);
+            }
+        }
+        [Fact]
+        public void Quad_ShouldTriangulateToTwoTriangles()
+        {
+            var polygon = new Polygon3D(new[]
+            {
+                new Vector3(0,0,0),
+                new Vector3(1,0,0),
+                new Vector3(1,1,0),
+                new Vector3(0,1,0),
+            });
+
+            var triangles = Triangulator.Triangulate(polygon);
+
+            Assert.Equal(2, triangles.Count);
+        }
+
+        [Fact]
+        public void Brush_Move_ShouldChangeWorldVertices()
+        {
+            var brush = BrushFactory.CreateBox(
+                new Vector3(0, 0, 0),
+                new Vector3(1, 1, 1),
+                "caulk");
+
+            brush.Transform.Position = new Vector3(10, 0, 0);
+
+            var vertices = brush.GetWorldVertices();
+
+            Assert.Contains(vertices, v => v.X >= 10);
+        }
+        [Fact]
+        public void Camera_ShouldProjectPointToScreen()
+        {
+            var camera = new Camera3D
+            {
+                Position = new Vector3(0, -500, 0),
+                Target = Vector3.Zero,
+                AspectRatio = 1f
+            };
+
+            var screen = camera.WorldToScreen(
+                Vector3.Zero,
+                800,
+                800);
+
+            Assert.True(screen.X > 300 && screen.X < 500);
+        }
     }
 }

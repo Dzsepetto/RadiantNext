@@ -11,6 +11,7 @@ namespace MapMaker.Core.Models
     public class Brush
     {
         public List<Face> Faces { get; } = new();
+        public Transform3D Transform { get; } = new();
         public List<Vector3> GenerateVertices()
         {
             var vertices = new List<Vector3>();
@@ -120,7 +121,6 @@ namespace MapMaker.Core.Models
 
             return true;
         }
-
         public void GenerateFacePolygons()
         {
             var allVertices = GenerateVertices();
@@ -144,6 +144,20 @@ namespace MapMaker.Core.Models
                 face.Polygon = new Polygon3D(
                     SortVerticesOnPlane(faceVertices, face.Plane));
             }
+        }
+        public List<Vector3> GetWorldVertices()
+        {
+            var localVertices = GenerateVertices();
+            var matrix = Transform.GetMatrix();
+
+            var world = new List<Vector3>();
+
+            foreach (var v in localVertices)
+            {
+                world.Add(Vector3.Transform(v, matrix));
+            }
+
+            return world;
         }
     }
 
