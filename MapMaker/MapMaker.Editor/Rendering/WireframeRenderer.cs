@@ -15,6 +15,8 @@ namespace MapMaker.Editor.Rendering
             double width,
             double height)
         {
+            dc.PushClip(new RectangleGeometry(new Rect(0, 0, width, height)));
+
             var pen = new Pen(Brushes.White, 1);
 
             foreach (var entity in map.Entities)
@@ -27,27 +29,34 @@ namespace MapMaker.Editor.Rendering
                     }
                 }
             }
+            dc.Pop();
         }
 
         private void DrawFace(
-            DrawingContext dc,
-            Pen pen,
-            Camera3D camera,
-            Face face,
-            double width,
-            double height)
+    DrawingContext dc,
+    Pen pen,
+    Camera3D camera,
+    Face face,
+    double width,
+    double height)
         {
-            var p1 = camera.WorldToScreen(face.P1, (float)width, (float)height);
-            var p2 = camera.WorldToScreen(face.P2, (float)width, (float)height);
-            var p3 = camera.WorldToScreen(face.P3, (float)width, (float)height);
+            if (face.Polygon == null || face.Polygon.Vertices.Count < 2)
+                return;
 
-            var pt1 = new Point(p1.X, p1.Y);
-            var pt2 = new Point(p2.X, p2.Y);
-            var pt3 = new Point(p3.X, p3.Y);
+            var vertices = face.Polygon.Vertices;
 
-            dc.DrawLine(pen, pt1, pt2);
-            dc.DrawLine(pen, pt2, pt3);
-            dc.DrawLine(pen, pt3, pt1);
+            for (int i = 0; i < vertices.Count; i++)
+            {
+                var v1 = camera.WorldToScreen(vertices[i], (float)width, (float)height);
+                var v2 = camera.WorldToScreen(
+                    vertices[(i + 1) % vertices.Count],
+                    (float)width,
+                    (float)height);
+
+                dc.DrawLine(pen,
+                    new Point(v1.X, v1.Y),
+                    new Point(v2.X, v2.Y));
+            }
         }
     }
 }

@@ -25,6 +25,11 @@ namespace MapMaker.Editor.Views
             Loaded += OnLoaded;
             CompositionTarget.Rendering += OnRenderFrame;
         }
+        protected override HitTestResult HitTestCore(PointHitTestParameters hitTestParameters)
+        {
+            return new PointHitTestResult(this, hitTestParameters.HitPoint);
+        }
+
         public void LoadMap(Map map)
         {
             _state.CurrentMap = map;
@@ -33,7 +38,7 @@ namespace MapMaker.Editor.Views
         private void OnLoaded(object sender, RoutedEventArgs e)
         {
             _input = new InputController(_state);
-
+            _input.SetViewport(this);
             CreateTestScene();
 
             Focus();
@@ -41,20 +46,22 @@ namespace MapMaker.Editor.Views
 
         private void OnRenderFrame(object? sender, EventArgs e)
         {
+            _input?.Update();
             InvalidateVisual();
         }
 
         protected override void OnRender(DrawingContext dc)
         {
             base.OnRender(dc);
-
             dc.DrawRectangle(
                 null,
                 new Pen(Brushes.Red, 2),
                 new Rect(0, 0, ActualWidth, ActualHeight));
+
+            if (ActualHeight == 0) return;
+
             _state.Camera.AspectRatio = (float)(ActualWidth / ActualHeight);
-            _state.Camera.Position = new Vector3(0, -500, 200);
-            _state.Camera.Target = Vector3.Zero;
+
             _renderer.Render(
                 dc,
                 _state.Camera,
@@ -63,11 +70,44 @@ namespace MapMaker.Editor.Views
                 ActualHeight);
         }
 
+        #region Keyboard
+
         protected override void OnKeyDown(KeyEventArgs e)
         {
             base.OnKeyDown(e);
             _input?.HandleKeyDown(e);
         }
+
+        protected override void OnKeyUp(KeyEventArgs e)
+        {
+            base.OnKeyUp(e);
+            _input?.HandleKeyUp(e);
+        }
+
+        #endregion
+
+        #region Mouse
+
+        protected override void OnMouseDown(MouseButtonEventArgs e)
+        {
+            base.OnMouseDown(e);
+            Focus();
+            _input?.HandleMouseDown(e);
+        }
+
+        protected override void OnMouseUp(MouseButtonEventArgs e)
+        {
+            base.OnMouseUp(e);
+            _input?.HandleMouseUp(e);
+        }
+
+        protected override void OnMouseMove(MouseEventArgs e)
+        {
+            base.OnMouseMove(e);
+            _input?.HandleMouseMove(e);
+        }
+
+        #endregion
 
         private void CreateTestScene()
         {
@@ -78,6 +118,8 @@ namespace MapMaker.Editor.Views
                 new Vector3(0, 0, 0),
                 new Vector3(128, 128, 128),
                 "caulk");
+
+            brush.GenerateFacePolygons();
 
             world.Brushes.Add(brush);
             _state.CurrentMap.Entities.Add(world);
