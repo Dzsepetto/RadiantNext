@@ -11,6 +11,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using MapMaker.Editor.Logging;
 
 namespace MapMaker.Editor
 {
@@ -30,8 +31,9 @@ namespace MapMaker.Editor
 
             if (dialog.ShowDialog() == true)
             {
+                var logger = new DebugLogger();
                 var map = MapParser.Load(dialog.FileName);
-                MessageBox.Show($"Entities: {map.Entities.Count}");
+                map.BuildGeometry(logger);
                 Viewport.LoadMap(map);
             }
         }

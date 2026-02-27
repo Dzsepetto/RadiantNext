@@ -1,17 +1,30 @@
 ﻿using System.Numerics;
+using MapMaker.Core.Logger;
 using MapMaker.Core.Models;
 
 namespace MapMaker.Core.Geometry
 {
     public static class GeometryBuilder
     {
-        public static void BuildBrushPolygons(Brush brush)
+        public static void BuildBrushPolygons(Brush brush, ILogger? logger = null)
         {
+            if (brush.Faces.Count < 4)
+            {
+                logger?.Warning($"Brush has only {brush.Faces.Count} faces. A valid convex brush needs at least 4.");
+            }
+
+            logger?.Info($"Building polygons for brush with {brush.Faces.Count} faces.");
+
+            int faceIndex = 0;
+
             foreach (var face in brush.Faces)
             {
-                var vertices = new List<Vector3>();
+                logger?.Info($"  Processing face #{faceIndex}");
 
-                // Minden 3 plane kombináció metszése
+                var vertices = new List<Vector3>();
+                int intersectionTests = 0;
+                int validIntersections = 0;
+
                 for (int i = 0; i < brush.Faces.Count; i++)
                 {
                     for (int j = i + 1; j < brush.Faces.Count; j++)
@@ -20,23 +33,55 @@ namespace MapMaker.Core.Geometry
                             brush.Faces[j] == face)
                             continue;
 
-                        var intersection = Plane3D.Intersect(face.Plane, brush.Faces[i].Plane, brush.Faces[j].Plane);
+                        intersectionTests++;
 
-                        if (intersection != null)
+                        var intersection = Plane3D.Intersect(
+                            face.Plane,
+                            brush.Faces[i].Plane,
+                            brush.Faces[j].Plane);
+
+                        if (intersection == null)
+                            continue;
+
+                        var point = intersection.Value;
+
+                        if (IsPointInsideBrush(point, brush))
                         {
-                            var point = intersection.Value;
-
-                            if (IsPointInsideBrush(point, brush))
-                            {
-                                vertices.Add(point);
-                            }
+                            vertices.Add(point);
+                            validIntersections++;
+                        }
+                        else
+                        {
+                            logger?.Warning(
+                                $"    Intersection outside brush on face #{faceIndex}");
                         }
                     }
                 }
 
-                face.Polygon = new Polygon3D(
-                    SortVerticesOnPlane(vertices, face.Plane));
+                logger?.Info(
+                    $"    Intersection tests: {intersectionTests}, valid: {validIntersections}");
+
+                if (vertices.Count < 3)
+                {
+                    logger?.Error(
+                        $"    Face #{faceIndex} generated only {vertices.Count} vertices. Polygon invalid.");
+
+                    face.Polygon = null;
+                    faceIndex++;
+                    continue;
+                }
+
+                var sorted = SortVerticesOnPlane(vertices, face.Plane).ToList();
+
+                face.Polygon = new Polygon3D(sorted);
+
+                logger?.Info(
+                    $"    Face #{faceIndex} polygon built with {sorted.Count} vertices.");
+
+                faceIndex++;
             }
+
+            logger?.Info("Brush polygon generation completed.");
         }
 
         private static bool IsPointInsideBrush(Vector3 point, Brush brush)
@@ -66,6 +111,12 @@ namespace MapMaker.Core.Geometry
 
             var right = Vector3.Normalize(
                 Vector3.Cross(plane.Normal, Vector3.UnitY));
+
+            if (right.LengthSquared() < 0.0001f)
+            {
+                right = Vector3.Normalize(
+                    Vector3.Cross(plane.Normal, Vector3.UnitX));
+            }
 
             var up = Vector3.Cross(right, plane.Normal);
 

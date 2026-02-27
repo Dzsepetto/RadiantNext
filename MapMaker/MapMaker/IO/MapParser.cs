@@ -1,13 +1,16 @@
 ﻿using System.Globalization;
 using System.Numerics;
+using MapMaker.Core.Logger;
 using MapMaker.Core.Models;
 
 namespace MapMaker.Core.IO
 {
     public static class MapParser
     {
-        public static Map Load(string path)
+        public static Map Load(string path, ILogger? logger = null)
         {
+            logger?.Info($"Loading map from: {path}");
+
             var lines = File.ReadAllLines(path);
             var map = new Map();
 

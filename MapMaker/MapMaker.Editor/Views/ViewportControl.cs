@@ -3,6 +3,7 @@ using MapMaker.Core.Geometry;
 using MapMaker.Core.Models;
 using MapMaker.Editor.Input;
 using MapMaker.Editor.Rendering;
+using MapMaker.Editor.Selection;
 using MapMaker.Editor.State;
 using System;
 using System.Numerics;
@@ -17,6 +18,7 @@ namespace MapMaker.Editor.Views
         private readonly WireframeRenderer _renderer = new();
         private readonly EditorState _state = new();
         private InputController? _input;
+        private SelectionService? _selection;
 
         public ViewportControl()
         {
@@ -33,13 +35,20 @@ namespace MapMaker.Editor.Views
         public void LoadMap(Map map)
         {
             _state.CurrentMap = map;
+            foreach (var entity in map.Entities)
+            {
+                foreach (var brush in entity.Brushes)
+                {
+                    brush.GenerateFacePolygons();
+                }
+            }
         }
 
         private void OnLoaded(object sender, RoutedEventArgs e)
         {
             _input = new InputController(_state);
             _input.SetViewport(this);
-            CreateTestScene();
+            _selection = new SelectionService(_state);
 
             Focus();
         }
@@ -66,6 +75,7 @@ namespace MapMaker.Editor.Views
                 dc,
                 _state.Camera,
                 _state.CurrentMap,
+                _state,
                 ActualWidth,
                 ActualHeight);
         }
@@ -92,6 +102,11 @@ namespace MapMaker.Editor.Views
         {
             base.OnMouseDown(e);
             Focus();
+
+            var pos = e.GetPosition(this);
+
+            TrySelectFace(pos);
+
             _input?.HandleMouseDown(e);
         }
 
@@ -123,6 +138,49 @@ namespace MapMaker.Editor.Views
 
             world.Brushes.Add(brush);
             _state.CurrentMap.Entities.Add(world);
+        }
+        private void TrySelectFace(Point mousePos)
+        {
+            if (_state.CurrentMap == null)
+                return;
+
+            float bestDistance = float.MaxValue;
+            Face? bestFace = null;
+
+            foreach (var entity in _state.CurrentMap.Entities)
+            {
+                foreach (var brush in entity.Brushes)
+                {
+                    foreach (var face in brush.Faces)
+                    {
+                        if (face.Polygon == null)
+                            continue;
+
+                        foreach (var vertex in face.Polygon.Vertices)
+                        {
+                            var screen = _state.Camera.WorldToScreen(
+                                vertex,
+                                (float)ActualWidth,
+                                (float)ActualHeight);
+
+                            var dx = (float)(screen.X - mousePos.X);
+                            var dy = (float)(screen.Y - mousePos.Y);
+                            var dist = dx * dx + dy * dy;
+
+                            if (dist < bestDistance && dist < 100) // 10px threshold
+                            {
+                                bestDistance = dist;
+                                bestFace = face;
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (bestFace != null)
+                _selection?.SelectFace(bestFace);
+            else
+                _selection?.ClearSelection();
         }
     }
 }

@@ -1,23 +1,24 @@
 ﻿using MapMaker.Core.Geometry;
 using MapMaker.Core.Models;
+using MapMaker.Editor.State;
 using System.Numerics;
 using System.Windows;
 using System.Windows.Media;
+using MapMaker.Editor.State;
 
 namespace MapMaker.Editor.Rendering
 {
     public class WireframeRenderer
     {
         public void Render(
-            DrawingContext dc,
-            Camera3D camera,
-            Map map,
-            double width,
-            double height)
+    DrawingContext dc,
+    Camera3D camera,
+    Map map,
+    EditorState state,
+    double width,
+    double height)
         {
             dc.PushClip(new RectangleGeometry(new Rect(0, 0, width, height)));
-
-            var pen = new Pen(Brushes.White, 1);
 
             foreach (var entity in map.Entities)
             {
@@ -25,10 +26,15 @@ namespace MapMaker.Editor.Rendering
                 {
                     foreach (var face in brush.Faces)
                     {
+                        var pen = face == state.SelectedFace
+                            ? new Pen(Brushes.Yellow, 2)
+                            : new Pen(Brushes.White, 1);
+
                         DrawFace(dc, pen, camera, face, width, height);
                     }
                 }
             }
+
             dc.Pop();
         }
 
