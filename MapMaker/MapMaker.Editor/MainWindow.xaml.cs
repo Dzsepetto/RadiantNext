@@ -33,7 +33,6 @@ namespace MapMaker.Editor
             {
                 var logger = new DebugLogger();
                 var map = MapParser.Load(dialog.FileName);
-                map.BuildGeometry(logger);
                 Viewport.LoadMap(map);
             }
         }

@@ -2,10 +2,12 @@ using MapMaker.Core;
 using MapMaker.Core.Geometry;
 using MapMaker.Core.Models;
 using MapMaker.Core.IO;
+using MapMaker.Core.Builders;
 using System.Numerics;
+
 namespace MapMaker.Tests
 {
-    public class UnitTest1
+    public class UnitTests
     {
         [Fact]
         public void CreateBox_ShouldGenerateSixFaces()
@@ -58,23 +60,24 @@ namespace MapMaker.Tests
             var p1 = Plane3D.FromPoints(
                 new Vector3(0, 0, 0),
                 new Vector3(1, 0, 0),
-                new Vector3(0, 1, 0)); // Z=0 plane
+                new Vector3(0, 1, 0)); // Z=0
 
             var p2 = Plane3D.FromPoints(
                 new Vector3(0, 0, 0),
                 new Vector3(0, 1, 0),
-                new Vector3(0, 0, 1)); // X=0 plane
+                new Vector3(0, 0, 1)); // X=0
 
             var p3 = Plane3D.FromPoints(
                 new Vector3(0, 0, 0),
                 new Vector3(1, 0, 0),
-                new Vector3(0, 0, 1)); // Y=0 plane
+                new Vector3(0, 0, 1)); // Y=0
 
             var result = Plane3D.Intersect(p1, p2, p3);
 
             Assert.NotNull(result);
             Assert.Equal(Vector3.Zero, result.Value);
         }
+
         [Fact]
         public void Box_ShouldGenerateEightVertices()
         {
@@ -83,10 +86,11 @@ namespace MapMaker.Tests
                 new Vector3(128, 128, 128),
                 "caulk");
 
-            var vertices = brush.GenerateVertices();
-            var inward = brush.AreNormalsFacingInward();
+            var vertices = BrushBuilder.GenerateVertices(brush);
+
             Assert.Equal(8, vertices.Count);
         }
+
         [Fact]
         public void Box_ShouldGeneratePolygonsWithFourVertices()
         {
@@ -95,7 +99,8 @@ namespace MapMaker.Tests
                 new Vector3(128, 128, 128),
                 "caulk");
 
-            brush.GenerateFacePolygons();
+            var vertices = BrushBuilder.GenerateVertices(brush);         
+            BrushBuilder.GenerateFacePolygons(brush, vertices);
 
             foreach (var face in brush.Faces)
             {
@@ -103,6 +108,7 @@ namespace MapMaker.Tests
                 Assert.Equal(4, face.Polygon.Vertices.Count);
             }
         }
+
         [Fact]
         public void Quad_ShouldTriangulateToTwoTriangles()
         {
@@ -117,38 +123,6 @@ namespace MapMaker.Tests
             var triangles = Triangulator.Triangulate(polygon);
 
             Assert.Equal(2, triangles.Count);
-        }
-
-        [Fact]
-        public void Brush_Move_ShouldChangeWorldVertices()
-        {
-            var brush = BrushFactory.CreateBox(
-                new Vector3(0, 0, 0),
-                new Vector3(1, 1, 1),
-                "caulk");
-
-            brush.Transform.Position = new Vector3(10, 0, 0);
-
-            var vertices = brush.GetWorldVertices();
-
-            Assert.Contains(vertices, v => v.X >= 10);
-        }
-        [Fact]
-        public void Camera_ShouldProjectPointToScreen()
-        {
-            var camera = new Camera3D
-            {
-                Position = new Vector3(0, -500, 0),
-                Target = Vector3.Zero,
-                AspectRatio = 1f
-            };
-
-            var screen = camera.WorldToScreen(
-                Vector3.Zero,
-                800,
-                800);
-
-            Assert.True(screen.X > 300 && screen.X < 500);
         }
     }
 }

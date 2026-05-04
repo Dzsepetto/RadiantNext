@@ -89,7 +89,7 @@ namespace MapMaker.Editor.Input
             var deltaY = (float)(pos.Y - _lastMousePos.Y);
 
             _lastMousePos = pos;
-
+            /*
             var camera = _state.Camera;
 
             camera.Yaw -= deltaX * MouseSensitivity;
@@ -97,12 +97,14 @@ namespace MapMaker.Editor.Input
             camera.Pitch = Math.Clamp(camera.Pitch, -1.5f, 1.5f);
 
             camera.UpdateVectors();
+            */
         }
 
         #endregion
 
         public void Update()
         {
+            /*
             var camera = _state.Camera;
 
             if (_w) camera.Position += camera.Forward * MoveSpeed;
@@ -111,6 +113,7 @@ namespace MapMaker.Editor.Input
             if (_d) camera.Position += camera.Right * MoveSpeed;
             if (_q) camera.Position += Vector3.UnitZ * MoveSpeed;
             if (_e) camera.Position -= Vector3.UnitZ * MoveSpeed;
+            */
         }
     }
 }

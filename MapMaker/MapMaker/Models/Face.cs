@@ -45,5 +45,19 @@
                 ScaleX = scaleX;
                 ScaleY = scaleY;
             }
+            public Face Flip()
+            {
+                return new Face(
+                    P1,
+                    P3,
+                    P2,
+                    Texture,
+                    ShiftX,
+                    ShiftY,
+                    Rotation,
+                    ScaleX,
+                    ScaleY
+                );
+            }
         }
     }

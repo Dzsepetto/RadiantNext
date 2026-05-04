@@ -1,5 +1,6 @@
 ﻿using System.Globalization;
 using System.Numerics;
+using System.Text.RegularExpressions;
 using MapMaker.Core.Logger;
 using MapMaker.Core.Models;
 
@@ -9,29 +10,28 @@ namespace MapMaker.Core.IO
     {
         public static Map Load(string path, ILogger? logger = null)
         {
-            logger?.Info($"Loading map from: {path}");
-
             var lines = File.ReadAllLines(path);
             var map = new Map();
 
             Entity? currentEntity = null;
             Brush? currentBrush = null;
 
+            int depth = 0;
+
             foreach (var raw in lines)
             {
                 var line = raw.Trim();
 
-                if (string.IsNullOrWhiteSpace(line))
-                    continue;
-
-                if (line.StartsWith("//"))
+                if (string.IsNullOrWhiteSpace(line) || line.StartsWith("//"))
                     continue;
 
                 if (line == "{")
                 {
-                    if (currentEntity == null)
+                    depth++;
+
+                    if (depth == 1)
                         currentEntity = new Entity();
-                    else
+                    else if (depth == 2)
                         currentBrush = new Brush();
 
                     continue;
@@ -39,22 +39,23 @@ namespace MapMaker.Core.IO
 
                 if (line == "}")
                 {
-                    if (currentBrush != null)
+                    if (depth == 2 && currentBrush != null)
                     {
                         currentEntity!.Brushes.Add(currentBrush);
                         currentBrush = null;
                     }
-                    else if (currentEntity != null)
+                    else if (depth == 1 && currentEntity != null)
                     {
                         map.Entities.Add(currentEntity);
                         currentEntity = null;
                     }
 
+                    depth--;
                     continue;
                 }
 
-                // Entity property
-                if (line.StartsWith("\""))
+                // entity property
+                if (depth == 1 && line.StartsWith("\""))
                 {
                     var parts = line.Split('"', StringSplitOptions.RemoveEmptyEntries);
 
@@ -64,11 +65,18 @@ namespace MapMaker.Core.IO
                     continue;
                 }
 
-                // Brush face
-                if (line.StartsWith("("))
+                // brush face
+                if (depth == 2 && line.StartsWith("("))
                 {
-                    var face = ParseFace(line);
-                    currentBrush!.Faces.Add(face);
+                    try
+                    {
+                        var face = ParseFace(line);
+                        currentBrush!.Faces.Add(face);
+                    }
+                    catch
+                    {
+                        logger?.Error($"Failed to parse: {line}");
+                    }
                 }
             }
 
@@ -77,51 +85,40 @@ namespace MapMaker.Core.IO
 
         private static Face ParseFace(string line)
         {
-            var matches = System.Text.RegularExpressions.Regex.Matches(
-                line,
-                @"\(\s*([^)]+)\s*\)");
+            var matches = Regex.Matches(line, @"\(\s*([^)]+)\s*\)");
 
             if (matches.Count < 3)
-                throw new FormatException("Invalid brush face format.");
+                throw new FormatException("Invalid face");
 
             var p1 = ParseVector(matches[0].Groups[1].Value);
             var p2 = ParseVector(matches[1].Groups[1].Value);
             var p3 = ParseVector(matches[2].Groups[1].Value);
 
-            var restStart = matches[2].Index + matches[2].Length;
-            var rest = line.Substring(restStart)
-                           .Trim()
-                           .Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            var rest = line.Substring(matches[2].Index + matches[2].Length)
+                .Trim()
+                .Split(' ', StringSplitOptions.RemoveEmptyEntries);
 
-            var texture = rest[0];
-
-            float shiftX = float.Parse(rest[1], CultureInfo.InvariantCulture);
-            float shiftY = float.Parse(rest[2], CultureInfo.InvariantCulture);
-            float rotation = float.Parse(rest[3], CultureInfo.InvariantCulture);
-            float scaleX = float.Parse(rest[4], CultureInfo.InvariantCulture);
-            float scaleY = float.Parse(rest[5], CultureInfo.InvariantCulture);
+            if (rest.Length < 6)
+                throw new FormatException("Invalid face params");
 
             return new Face(
-                p1,
-                p2,
-                p3,
-                texture,
-                shiftX,
-                shiftY,
-                rotation,
-                scaleX,
-                scaleY);
+                p1, p2, p3,
+                rest[0],
+                float.Parse(rest[1], CultureInfo.InvariantCulture),
+                float.Parse(rest[2], CultureInfo.InvariantCulture),
+                float.Parse(rest[3], CultureInfo.InvariantCulture),
+                float.Parse(rest[4], CultureInfo.InvariantCulture),
+                float.Parse(rest[5], CultureInfo.InvariantCulture)
+            );
         }
 
         private static Vector3 ParseVector(string str)
         {
-            var values = str
-                .Trim()
-                .Split(' ', StringSplitOptions.RemoveEmptyEntries)
-                .Select(v => float.Parse(v, CultureInfo.InvariantCulture))
+            var v = str.Split(' ', StringSplitOptions.RemoveEmptyEntries)
+                .Select(x => float.Parse(x, CultureInfo.InvariantCulture))
                 .ToArray();
 
-            return new Vector3(values[0], values[1], values[2]);
+            return new Vector3(v[0], v[1], v[2]);
         }
     }
 }
