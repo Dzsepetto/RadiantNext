@@ -1,5 +1,6 @@
-﻿using MapMaker.Core.Geometry;
-using MapMaker.Core.Models;
+﻿using MapMaker.Core.Models;
+using MapMaker.Editor.Models;
+using System.Windows.Media.Media3D;
 
 namespace MapMaker.Editor.State
 {
@@ -9,5 +10,6 @@ namespace MapMaker.Editor.State
         public object? SelectedObject { get; set; }
         public Brush? SelectedBrush { get; set; }
         public Face? SelectedFace { get; set; }
+        public Camera3D Camera { get; set; } = new();
     }
 }

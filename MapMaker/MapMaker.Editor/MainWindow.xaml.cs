@@ -1,6 +1,9 @@
 ﻿using MapMaker.Core.IO;
-using Microsoft.Win32;
+using MapMaker.Editor.Input;
+using MapMaker.Editor.Logging;
+using MapMaker.Editor.State;
 using MapMaker.Editor.Views;
+using Microsoft.Win32;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
@@ -11,7 +14,6 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
-using MapMaker.Editor.Logging;
 
 namespace MapMaker.Editor
 {
@@ -20,9 +22,25 @@ namespace MapMaker.Editor
     /// </summary>
     public partial class MainWindow : Window
     {
+        private EditorState _state = new();
+        private InputController _input;
         public MainWindow()
         {
             InitializeComponent();
+
+            _input = new InputController(_state);
+
+            Viewport.SetInput(_input);
+
+            this.KeyDown += (s, e) => _input.HandleKeyDown(e);
+            this.KeyUp += (s, e) => _input.HandleKeyUp(e);
+
+            CompositionTarget.Rendering += (s, e) =>
+            {
+                _input.Update();
+                Viewport.ApplyCamera(_state.Camera);
+            };
+
         }
         private void Open_Click(object sender, RoutedEventArgs e)
         {
@@ -36,5 +54,6 @@ namespace MapMaker.Editor
                 Viewport.LoadMap(map);
             }
         }
+
     }
 }
