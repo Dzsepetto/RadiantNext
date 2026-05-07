@@ -1,15 +1,48 @@
 ﻿using MapMaker.Core.Models;
 using MapMaker.Editor.Models;
-using System.Windows.Media.Media3D;
+using System.Numerics;
 
 namespace MapMaker.Editor.State
 {
-    public class EditorState
+    public enum SelectionMode
+    {
+        Object,
+        Face
+    }
+
+    public enum EditorTool
+    {
+        Select,
+        Move,
+        Brush
+    }
+
+    public sealed class EditorState
     {
         public Map CurrentMap { get; set; } = new();
+
+        public Camera3D Camera { get; set; } = new();   
+        public EditorGrid Grid { get; } = new();
+
+        public Vector3 CursorWorldPosition { get; set; }
+
+        public EditorTool CurrentTool { get; set; }
+            = EditorTool.Select;
+
+        public SelectionMode SelectionMode { get; set; }
+            = SelectionMode.Object;
+
         public object? SelectedObject { get; set; }
+
         public Brush? SelectedBrush { get; set; }
+
         public Face? SelectedFace { get; set; }
-        public Camera3D Camera { get; set; } = new();
+
+        public void ClearSelection()
+        {
+            SelectedObject = null;
+            SelectedBrush = null;
+            SelectedFace = null;
+        }
     }
 }

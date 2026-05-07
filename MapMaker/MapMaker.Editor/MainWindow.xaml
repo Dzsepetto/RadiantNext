@@ -16,7 +16,49 @@
                 <MenuItem Header="Open" Click="Open_Click" />
                 <MenuItem Header="Save"/>
             </MenuItem>
+            <MenuItem Header="Grid">
+                <MenuItem Header="1" Click="GridSize_Click"/>
+                <MenuItem Header="2" Click="GridSize_Click"/>
+                <MenuItem Header="4" Click="GridSize_Click"/>
+                <MenuItem Header="8" Click="GridSize_Click"/>
+                <MenuItem Header="16" Click="GridSize_Click"/>
+                <MenuItem Header="32" Click="GridSize_Click"/>
+                <MenuItem Header="64" Click="GridSize_Click"/>
+            </MenuItem>
         </Menu>
+
+        <!-- Top Toolbar -->
+        <Border DockPanel.Dock="Top"
+        Height="28"
+        Background="#252526">
+            <StackPanel Orientation="Horizontal"
+                VerticalAlignment="Center"
+                Margin="10,0,0,0">
+
+                <TextBlock Text="Grid:"
+                   Foreground="White"
+                   VerticalAlignment="Center"
+                   Margin="0,0,6,0"/>
+
+                <TextBlock x:Name="WorldPositionText"
+                   Text="X: 0  Y: 0  Z: 0"
+                   Foreground="White"
+                   VerticalAlignment="Center"/>
+                
+                <Separator Margin="10,0"/>
+                
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition/>
+                        <ColumnDefinition/>
+                    </Grid.ColumnDefinitions>
+                    <Button Content="Object" Click="ObjectSelect_Click" Grid.Column="0"/>
+
+                    <Button Content="Face" Click="FaceSelect_Click" Grid.Column="1"/>
+                </Grid>
+                
+            </StackPanel>
+        </Border>
 
         <!-- Left Tools Panel -->
         <Border DockPanel.Dock="Left"

@@ -30,7 +30,7 @@ namespace MapMaker.Editor
 
             _input = new InputController(_state);
 
-            Viewport.SetInput(_input);
+            Viewport.SetInput(_input, _state);
 
             this.KeyDown += (s, e) => _input.HandleKeyDown(e);
             this.KeyUp += (s, e) => _input.HandleKeyUp(e);
@@ -54,6 +54,26 @@ namespace MapMaker.Editor
                 Viewport.LoadMap(map);
             }
         }
+        private void ObjectSelect_Click(object sender, RoutedEventArgs e)
+        {
+            _state.SelectionMode = MapMaker.Editor.State.SelectionMode.Object;
+        }
 
+        private void FaceSelect_Click(object sender, RoutedEventArgs e)
+        {
+            _state.SelectionMode = MapMaker.Editor.State.SelectionMode.Face;
+        }
+        private void GridSize_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is not MenuItem item)
+                return;
+
+            if (!float.TryParse(item.Header?.ToString(), out var gridSize))
+                return;
+
+            _state.Grid.SetSize(gridSize);
+
+            Viewport.SetGridSize(gridSize);
+        }
     }
 }
