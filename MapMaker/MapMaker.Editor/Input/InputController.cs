@@ -3,6 +3,7 @@ using System.Numerics;
 using System.Windows;
 using System.Windows.Input;
 using MapMaker.Editor.State;
+using MapMaker.Core.Editing;
 
 namespace MapMaker.Editor.Input
 {
@@ -21,8 +22,9 @@ namespace MapMaker.Editor.Input
         private const float MouseSensitivity = 0.003f;
 
         private IInputElement? _viewport;
+        public event Action? SceneChanged;
 
-  
+
         public InputController(EditorState state)
         {
             _state = state;
@@ -38,6 +40,8 @@ namespace MapMaker.Editor.Input
             if (e.Key == Key.D) _d = true;
             if (e.Key == Key.Q) _q = true;
             if (e.Key == Key.E) _e = true;
+
+            HandleMoveKeys(e);
         }
 
         public void HandleKeyUp(KeyEventArgs e)
@@ -112,6 +116,65 @@ namespace MapMaker.Editor.Input
             if (_d) camera.Position += camera.Right * MoveSpeed;
             if (_q) camera.Position += Vector3.UnitZ * MoveSpeed;
             if (_e) camera.Position -= Vector3.UnitZ * MoveSpeed;
+        }
+
+        private void HandleMoveKeys(KeyEventArgs e)
+        {
+            if (_state.CurrentTool != EditorTool.Move)
+                return;
+
+            float step = _state.Grid.Size;
+
+            Vector3 delta = Vector3.Zero;
+
+            switch (e.Key)
+            {
+                case Key.Left:
+                    delta = new Vector3(-step, 0, 0);
+                    break;
+
+                case Key.Right:
+                    delta = new Vector3(step, 0, 0);
+                    break;
+
+                case Key.Up:
+                    delta = new Vector3(0, step, 0);
+                    break;
+
+                case Key.Down:
+                    delta = new Vector3(0, -step, 0);
+                    break;
+
+                case Key.PageUp:
+                    delta = new Vector3(0, 0, step);
+                    break;
+
+                case Key.PageDown:
+                    delta = new Vector3(0, 0, -step);
+                    break;
+            }
+
+            if (delta == Vector3.Zero)
+                return;
+
+            if (_state.SelectedBrush != null)
+            {
+                BrushMover.Move(_state.SelectedBrush, delta);
+            }
+            else if (_state.SelectedFace != null)
+            {
+                FaceMover.Move(_state.SelectedFace, delta);
+            }
+            else
+            {
+                return;
+            }
+
+            _state.IsDirty = true;
+
+            SceneChanged?.Invoke();
+
+            e.Handled = true;
         }
     }
 }

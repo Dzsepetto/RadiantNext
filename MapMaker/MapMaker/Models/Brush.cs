@@ -14,7 +14,7 @@ namespace MapMaker.Core.Models
         public List<Vector3> GetVertices()
         {
             if (_cachedVertices == null)
-                _cachedVertices = BrushBuilder.GenerateVertices(this);
+                _cachedVertices = BrushBuilder.GenerateVertices(Faces);
 
             return _cachedVertices;
         }

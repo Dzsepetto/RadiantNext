@@ -55,7 +55,11 @@ namespace MapMaker.Editor.Views
         {
             _input?.HandleMouseDown(e);
 
-            if (e.ChangedButton == MouseButton.Left)
+            if (_state == null)
+                return;
+
+            if (e.ChangedButton == MouseButton.Left &&
+                _state.CurrentTool == EditorTool.Select)
             {
                 HandleSelection(e);
             }
@@ -211,7 +215,10 @@ namespace MapMaker.Editor.Views
             _currentMap = map;
             RebuildScene();
         }
-
+        public void Refresh()
+        {
+            RebuildScene();
+        }
         private void RebuildScene()
         {
             _scene.Children.Clear();

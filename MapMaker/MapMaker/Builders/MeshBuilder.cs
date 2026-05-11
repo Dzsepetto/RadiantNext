@@ -15,11 +15,8 @@ namespace MapMaker.Core.Builders
         {
             var mesh = new MeshData();
 
-            BrushBuilder.FixNormals(brush);
             brush.Invalidate();
-
-            var vertices = BrushBuilder.GenerateVertices(brush);
-            BrushBuilder.GenerateFacePolygons(brush, vertices);
+            BrushBuilder.Build(brush);
 
             var matrix = brush.Transform.GetMatrix();
 

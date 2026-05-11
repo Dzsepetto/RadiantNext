@@ -10,9 +10,9 @@
     {
         public class Face
         {
-            public Vector3 P1 { get; }
-            public Vector3 P2 { get; }
-            public Vector3 P3 { get; }
+            public Vector3 P1 { get; private set; }
+            public Vector3 P2 { get; private set; }
+            public Vector3 P3 { get; private set; }
 
             public string Texture { get; }
 
@@ -59,5 +59,13 @@
                     ScaleY
                 );
             }
+        public void Translate(Vector3 delta)
+        {
+            P1 += delta;
+            P2 += delta;
+            P3 += delta;
+
+            Polygon = null;
         }
+    }
     }

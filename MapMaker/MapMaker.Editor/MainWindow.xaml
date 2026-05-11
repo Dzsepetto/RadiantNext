@@ -14,9 +14,9 @@
             <MenuItem Header="File">
                 <MenuItem Header="New"/>
                 <MenuItem Header="Open" Click="Open_Click" />
-                <MenuItem Header="Save"/>
+                <MenuItem Header="Save" Click="Save_Click"/>
             </MenuItem>
-            <MenuItem Header="Grid">
+            <MenuItem x:Name="GridMenu" Header="Grid" >
                 <MenuItem Header="1" Click="GridSize_Click"/>
                 <MenuItem Header="2" Click="GridSize_Click"/>
                 <MenuItem Header="4" Click="GridSize_Click"/>
@@ -35,10 +35,11 @@
                 VerticalAlignment="Center"
                 Margin="10,0,0,0">
 
-                <TextBlock Text="Grid:"
+                <TextBlock x:Name="GridSizeText"
+                   Text="Grid: 16"
                    Foreground="White"
                    VerticalAlignment="Center"
-                   Margin="0,0,6,0"/>
+                   Margin="0,0,10,0"/>
 
                 <TextBlock x:Name="WorldPositionText"
                    Text="X: 0  Y: 0  Z: 0"
@@ -52,9 +53,18 @@
                         <ColumnDefinition/>
                         <ColumnDefinition/>
                     </Grid.ColumnDefinitions>
-                    <Button Content="Object" Click="ObjectSelect_Click" Grid.Column="0"/>
+                    <RadioButton Content="Object"
+             Grid.Column="0"
+             GroupName="SelectionMode"
+             IsChecked="True"
+             Click="ObjectSelect_Click"
+             Style="{StaticResource {x:Type ToggleButton}}"/>
 
-                    <Button Content="Face" Click="FaceSelect_Click" Grid.Column="1"/>
+                    <RadioButton Content="Face"
+             Grid.Column="1"
+             GroupName="SelectionMode"
+             Click="FaceSelect_Click"
+             Style="{StaticResource {x:Type ToggleButton}}"/>
                 </Grid>
                 
             </StackPanel>
@@ -65,9 +75,17 @@
                 Width="200"
                 Background="#2a2a2a">
             <StackPanel>
-                <Button Content="Select Tool"/>
-                <Button Content="Move Tool"/>
-                <Button Content="Brush Tool"/>
+                <RadioButton Content="Select Tool"
+             GroupName="EditorTool"
+             IsChecked="True"
+             Click="SelectTool_Click"
+                Style="{StaticResource {x:Type ToggleButton}}"/>
+
+                <RadioButton Content="Move Tool"
+             GroupName="EditorTool"
+             Click="MoveTool_Click"
+                Style="{StaticResource {x:Type ToggleButton}}"/>
+                <Button Content="Valamilyen Tool"/>
             </StackPanel>
         </Border>
 

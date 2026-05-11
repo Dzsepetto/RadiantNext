@@ -57,10 +57,15 @@ namespace MapMaker.Core.IO
                 // entity property
                 if (depth == 1 && line.StartsWith("\""))
                 {
-                    var parts = line.Split('"', StringSplitOptions.RemoveEmptyEntries);
+                    var matches = Regex.Matches(line, "\"([^\"]*)\"");
 
-                    if (parts.Length >= 2)
-                        currentEntity!.Properties[parts[0]] = parts[1];
+                    if (matches.Count >= 2)
+                    {
+                        var key = matches[0].Groups[1].Value;
+                        var value = matches[1].Groups[1].Value;
+
+                        currentEntity!.Properties[key] = value;
+                    }
 
                     continue;
                 }

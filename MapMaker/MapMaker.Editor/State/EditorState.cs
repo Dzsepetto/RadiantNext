@@ -38,6 +38,10 @@ namespace MapMaker.Editor.State
 
         public Face? SelectedFace { get; set; }
 
+        public string? CurrentFilePath { get; set; }
+        public bool IsDirty { get; set; }
+
+
         public void ClearSelection()
         {
             SelectedObject = null;
