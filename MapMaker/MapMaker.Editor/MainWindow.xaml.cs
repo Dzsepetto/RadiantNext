@@ -33,8 +33,9 @@ namespace MapMaker.Editor
 
             Viewport.SetInput(_input, _state);
 
-            this.KeyDown += (s, e) => _input.HandleKeyDown(e);
-            this.KeyUp += (s, e) => _input.HandleKeyUp(e);
+
+            this.PreviewKeyDown += (s, e) => _input.HandleKeyDown(e);
+            this.PreviewKeyUp += (s, e) => _input.HandleKeyUp(e);
 
             CompositionTarget.Rendering += (s, e) =>
             {
@@ -77,17 +78,6 @@ namespace MapMaker.Editor
 
                 Viewport.LoadMap(map);
             }
-        }
-        private void MoveSelectedBrush(Vector3 delta)
-        {
-            if (_state.SelectedBrush == null)
-                return;
-
-            MapMaker.Core.Editing.BrushMover.Move(_state.SelectedBrush, delta);
-
-            _state.IsDirty = true;
-
-            Viewport.Refresh();
         }
         private void Save_Click(object sender, RoutedEventArgs e)
         {
@@ -143,6 +133,10 @@ namespace MapMaker.Editor
         private void MoveTool_Click(object sender, RoutedEventArgs e)
         {
             _state.CurrentTool = EditorTool.Move;
+        }
+        private void RotateTool_Click(object sender, RoutedEventArgs e)
+        {
+            _state.CurrentTool = EditorTool.Rotate;
         }
     }
 }

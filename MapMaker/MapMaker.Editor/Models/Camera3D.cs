@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Numerics;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Numerics;
 
 namespace MapMaker.Editor.Models
 {
@@ -20,11 +15,16 @@ namespace MapMaker.Editor.Models
 
         public float AspectRatio { get; set; } = 1f;
 
+        public Camera3D()
+        {
+            UpdateVectors();
+        }
+
         public void UpdateVectors()
         {
             Forward = Vector3.Normalize(new Vector3(
-                MathF.Cos(Pitch) * MathF.Cos(Yaw),
                 MathF.Cos(Pitch) * MathF.Sin(Yaw),
+                MathF.Cos(Pitch) * MathF.Cos(Yaw),
                 MathF.Sin(Pitch)
             ));
 

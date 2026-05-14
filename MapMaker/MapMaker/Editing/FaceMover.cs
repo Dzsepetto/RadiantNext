@@ -1,18 +1,22 @@
 ﻿using MapMaker.Core.Models;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Numerics;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace MapMaker.Core.Editing
 {
-    public class FaceMover
+    public static class FaceMover
     {
-        public static void Move(Face face, Vector3 delta)
+        public static void Move(Face face, Vector3 delta, float gridSize)
         {
             face.Translate(delta);
+            face.SnapToGrid(gridSize);
+        }
+
+        public static void MoveAlongNormal(Face face, float distance, float gridSize)
+        {
+            var normal = face.Normal;
+
+            face.Translate(normal * distance);
+            face.SnapToGrid(gridSize);
         }
     }
 }

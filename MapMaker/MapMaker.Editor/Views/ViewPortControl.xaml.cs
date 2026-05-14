@@ -55,6 +55,9 @@ namespace MapMaker.Editor.Views
         {
             _input?.HandleMouseDown(e);
 
+            if (e.Handled)
+                return;
+
             if (_state == null)
                 return;
 
@@ -238,8 +241,34 @@ namespace MapMaker.Editor.Views
             {
                 MapRenderer.AddMap(_scene, _currentMap, _modelToFace, _faceToModel, _modelToBrush, _brushToModels);
             }
+
+            RestoreSelectionVisuals();
         }
 
+        private void RestoreSelectionVisuals()
+        {
+            if (_state == null)
+                return;
+
+            if (_state.SelectedFace != null &&
+                _faceToModel.TryGetValue(_state.SelectedFace, out var faceModel))
+            {
+                faceModel.Material = new DiffuseMaterial(
+                    new SolidColorBrush(Colors.Yellow));
+
+                _selectedFace = _state.SelectedFace;
+            }
+
+            if (_state.SelectedBrush != null &&
+                _brushToModels.TryGetValue(_state.SelectedBrush, out var brushModels))
+            {
+                foreach (var model in brushModels)
+                {
+                    model.Material = new DiffuseMaterial(
+                        new SolidColorBrush(Colors.Orange));
+                }
+            }
+        }
         #endregion
     }
 }

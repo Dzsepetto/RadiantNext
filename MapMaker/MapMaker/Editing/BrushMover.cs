@@ -5,12 +5,25 @@ namespace MapMaker.Core.Editing
 {
     public static class BrushMover
     {
-        public static void Move(Brush brush, Vector3 delta)
+        public static void Move(Brush brush, Vector3 delta, float gridSize)
+        {
+            foreach (var face in brush.Faces)
+            {
+                face.Translate(delta);
+                face.SnapToGrid(gridSize);
+            }
+
+            brush.Invalidate();
+        }
+
+        public static void MoveRaw(Brush brush, Vector3 delta)
         {
             foreach (var face in brush.Faces)
             {
                 face.Translate(delta);
             }
+
+            brush.Invalidate();
         }
     }
 }

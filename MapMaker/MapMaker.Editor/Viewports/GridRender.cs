@@ -11,9 +11,11 @@ namespace MapMaker.Editor.Viewports
 {
     internal static class GridRenderer
     {
+        private const float GridExtent = 8192f;
         public static void AddGrid(Model3DGroup scene, float gridSize = 16f, int lineCount = 64)
         {
-            float extent = gridSize * lineCount;
+            float extent = GridExtent;
+            int actualLineCount = (int)(extent / gridSize);
 
             var minorMaterial = new DiffuseMaterial(
                 new SolidColorBrush(Color.FromRgb(55, 55, 55)));
@@ -27,21 +29,19 @@ namespace MapMaker.Editor.Viewports
             var yAxisMaterial = new DiffuseMaterial(
                 new SolidColorBrush(Colors.Green));
 
-            for (int i = -lineCount; i <= lineCount; i++)
+            for (int i = -actualLineCount; i <= actualLineCount; i++)
             {
                 float p = i * gridSize;
 
                 bool isMajor = i % 8 == 0;
                 var material = isMajor ? majorMaterial : minorMaterial;
 
-                // X irányú vonalak
                 scene.Children.Add(CreateLineModel(
                     new Vector3(-extent, p, 0),
                     new Vector3(extent, p, 0),
                     i == 0 ? xAxisMaterial : material,
                     i == 0 ? 2f : 0.5f));
 
-                // Y irányú vonalak
                 scene.Children.Add(CreateLineModel(
                     new Vector3(p, -extent, 0),
                     new Vector3(p, extent, 0),
@@ -49,7 +49,6 @@ namespace MapMaker.Editor.Viewports
                     i == 0 ? 2f : 0.5f));
             }
 
-            // Z tengely originből felfelé
             scene.Children.Add(CreateLineModel(
                 new Vector3(0, 0, 0),
                 new Vector3(0, 0, extent * 0.25f),

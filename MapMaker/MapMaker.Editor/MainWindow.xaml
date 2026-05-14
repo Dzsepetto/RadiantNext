@@ -72,20 +72,23 @@
 
         <!-- Left Tools Panel -->
         <Border DockPanel.Dock="Left"
-                Width="200"
+                Width="100"
                 Background="#2a2a2a">
             <StackPanel>
-                <RadioButton Content="Select Tool"
+                <RadioButton Content="Select"
              GroupName="EditorTool"
              IsChecked="True"
              Click="SelectTool_Click"
                 Style="{StaticResource {x:Type ToggleButton}}"/>
 
-                <RadioButton Content="Move Tool"
+                <RadioButton Content="Move"
              GroupName="EditorTool"
              Click="MoveTool_Click"
                 Style="{StaticResource {x:Type ToggleButton}}"/>
-                <Button Content="Valamilyen Tool"/>
+                <RadioButton Content="Rotate"
+             GroupName="EditorTool"
+             Click="RotateTool_Click"
+             Style="{StaticResource {x:Type ToggleButton}}"/>
             </StackPanel>
         </Border>
 
