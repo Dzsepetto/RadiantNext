@@ -224,10 +224,22 @@ namespace MapMaker.Core.IO
 
                 if (!TryReadFloat(out var scaleY, "Expected face scaleY value."))
                 {
+
                     SynchronizeFace();
+
                     return null;
                 }
+                var extraParameters = new List<string>();
 
+                while (
+                    !IsAtEnd() &&
+                    !Check(MapTokenType.LeftParen) &&
+                    !Check(MapTokenType.RightBrace) &&
+                    !Check(MapTokenType.Comment)
+                )
+                {
+                    extraParameters.Add(Advance().Value);
+                }
                 return new Face(
                     p1,
                     p2,
@@ -237,7 +249,8 @@ namespace MapMaker.Core.IO
                     shiftY,
                     rotation,
                     scaleX,
-                    scaleY
+                    scaleY,
+                    extraParameters
                 );
             }
 

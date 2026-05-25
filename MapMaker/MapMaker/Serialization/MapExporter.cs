@@ -25,25 +25,26 @@ namespace MapMaker.Core.IO
 
                     foreach (var face in brush.Faces)
                     {
-                        sb.AppendLine(string.Format(
+                        var faceLine = string.Format(
                             CultureInfo.InvariantCulture,
-
-                            "( {0} {1} {2} ) ( {3} {4} {5} ) ( {6} {7} {8} ) {9} {10} {11} {12} {13} {14} 0 0 0",
-
+                            "( {0} {1} {2} ) ( {3} {4} {5} ) ( {6} {7} {8} ) {9} {10} {11} {12} {13} {14}",
                             face.P1.X, face.P1.Y, face.P1.Z,
                             face.P2.X, face.P2.Y, face.P2.Z,
                             face.P3.X, face.P3.Y, face.P3.Z,
-
                             face.Texture,
-
                             face.ShiftX,
                             face.ShiftY,
-
                             face.Rotation,
-
                             face.ScaleX,
                             face.ScaleY
-                        ));
+                        );
+
+                        if (face.ExtraParameters.Count > 0)
+                        {
+                            faceLine += " " + string.Join(" ", face.ExtraParameters);
+                        }
+
+                        sb.AppendLine(faceLine);
                     }
 
                     sb.AppendLine("}");

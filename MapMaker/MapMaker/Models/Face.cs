@@ -23,18 +23,11 @@
             public float ScaleX { get; }
             public float ScaleY { get; }
 
+            public List<string> ExtraParameters { get; } = new();
+
             public Plane3D Plane => Plane3D.FromPoints(P1, P2, P3);
             public Polygon3D? Polygon { get; set; }
-            public Face(
-                Vector3 p1,
-                Vector3 p2,
-                Vector3 p3,
-                string texture,
-                float shiftX = 0,
-                float shiftY = 0,
-                float rotation = 0,
-                float scaleX = 0.25f,
-                float scaleY = 0.25f)
+            public Face(Vector3 p1, Vector3 p2, Vector3 p3, string texture, float shiftX = 0, float shiftY = 0, float rotation = 0, float scaleX = 0.25f, float scaleY = 0.25f, IEnumerable<string>? extraParameters = null)
             {
                 P1 = p1;
                 P2 = p2;
@@ -45,20 +38,15 @@
                 Rotation = rotation;
                 ScaleX = scaleX;
                 ScaleY = scaleY;
+                if (extraParameters != null)
+                {
+                    ExtraParameters.AddRange(extraParameters);
+                }
+
             }
             public Face Flip()
             {
-                return new Face(
-                    P1,
-                    P3,
-                    P2,
-                    Texture,
-                    ShiftX,
-                    ShiftY,
-                    Rotation,
-                    ScaleX,
-                    ScaleY
-                );
+                return new Face(P1, P3, P2, Texture, ShiftX, ShiftY, Rotation, ScaleX, ScaleY, ExtraParameters);
             }
         public Vector3 Normal
         {
