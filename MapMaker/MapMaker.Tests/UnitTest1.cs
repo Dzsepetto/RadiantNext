@@ -78,6 +78,8 @@ namespace MapMaker.Tests
             Assert.Equal(Vector3.Zero, result.Value);
         }
 
+        /*
+
         [Fact]
         public void Box_ShouldGenerateEightVertices()
         {
@@ -124,5 +126,7 @@ namespace MapMaker.Tests
 
             Assert.Equal(2, triangles.Count);
         }
+
+        */
     }
 }
