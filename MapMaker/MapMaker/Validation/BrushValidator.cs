@@ -46,12 +46,14 @@ namespace MapMaker.Core.Validation
             }
 
             ValidateDegenerateFaces(brush, issues);
+
+            if (issues.Any(i => i.Severity == BrushValidationSeverity.Error))
+            {
+                return issues;
+            }
+
             ValidateDuplicatePlanes(brush, issues);
-
-            // Fontos: előbb Build(), mert ez javítja a face normálokat.
             ValidateFacePolygons(brush, issues);
-
-            // Utána polygonokból nézzük a vertexeket, nem raw brush.GetVertices()-ből.
             ValidateBrushVerticesAfterBuild(brush, issues);
 
             return issues;
