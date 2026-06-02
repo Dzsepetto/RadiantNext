@@ -2,7 +2,7 @@
 using MapMaker.Editor.Models;
 using System.Numerics;
 
-namespace MapMaker.Editor.State
+namespace MapMaker.Editor.Editor
 {
     public enum SelectionMode
     {

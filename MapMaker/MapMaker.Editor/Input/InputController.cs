@@ -1,12 +1,11 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Numerics;
 using System.Windows;
 using System.Windows.Input;
 using MapMaker.Core.Editing;
 using MapMaker.Core.Models;
-using MapMaker.Editor.State;
+using MapMaker.Editor.Editor;
+using MapMaker.Editor.Tools;
 
 namespace MapMaker.Editor.Input
 {
@@ -22,63 +21,54 @@ namespace MapMaker.Editor.Input
         private const float MoveSpeed = 5f;
         private const float MouseSensitivity = 0.003f;
 
-        private const float RotateMouseSensitivity = 0.5f;
-        private const float MouseMoveSensitivity = 1.0f;
-
         private IInputElement? _viewport;
+
+        private readonly MoveTool _moveTool;
+        private readonly RotateTool _rotateTool;
+        private IEditorTool? _activeTool;
 
         public event Action? SceneChanged;
         public event Action<Brush>? BrushChanged;
 
-        private bool _transformDragging;
-        private EditorTool _transformTool;
-        private Point _transformStartMousePos;
-        private Brush? _transformBrush;
-        private List<FaceSnapshot>? _transformOriginalFaces;
-
-        private DateTime _lastSceneUpdate = DateTime.MinValue;
-        private static readonly TimeSpan SceneUpdateInterval =
-            TimeSpan.FromMilliseconds(16);
-
-        private sealed class FaceSnapshot
-        {
-            public Face Face { get; }
-            public Vector3 P1 { get; }
-            public Vector3 P2 { get; }
-            public Vector3 P3 { get; }
-
-            public FaceSnapshot(Face face)
-            {
-                Face = face;
-                P1 = face.P1;
-                P2 = face.P2;
-                P3 = face.P3;
-            }
-        }
-
         public InputController(EditorState state)
         {
             _state = state;
+
+            _moveTool = new MoveTool(_state);
+            _rotateTool = new RotateTool(_state);
+
+            _moveTool.SceneChanged += () => SceneChanged?.Invoke();
+            _rotateTool.SceneChanged += () => SceneChanged?.Invoke();
+
+            _moveTool.Committed += () => SceneChanged?.Invoke();
+            _rotateTool.Committed += () => SceneChanged?.Invoke();
         }
 
         public void SetViewport(IInputElement element)
         {
             _viewport = element;
+
+            _moveTool.SetViewport(element);
+            _rotateTool.SetViewport(element);
         }
 
         #region Keyboard
 
         public void HandleKeyDown(KeyEventArgs e)
         {
-            if (_transformDragging)
+            if (e.Key == Key.Escape && _activeTool != null)
             {
-                if (e.Key == Key.Escape)
-                {
-                    CancelTransformDrag(switchToSelect: true);
-                    e.Handled = true;
-                    return;
-                }
+                _activeTool.Cancel();
+                _activeTool = null;
 
+                _state.CurrentTool = EditorTool.Select;
+
+                e.Handled = true;
+                return;
+            }
+
+            if (_activeTool != null)
+            {
                 e.Handled = true;
                 return;
             }
@@ -126,11 +116,15 @@ namespace MapMaker.Editor.Input
             if (_viewport == null)
                 return;
 
-            if (_transformDragging)
+            if (_activeTool != null)
             {
                 if (e.ChangedButton == MouseButton.Right)
                 {
-                    CancelTransformDrag(switchToSelect: true);
+                    _activeTool.Cancel();
+                    _activeTool = null;
+
+                    _state.CurrentTool = EditorTool.Select;
+
                     e.Handled = true;
                     return;
                 }
@@ -141,16 +135,16 @@ namespace MapMaker.Editor.Input
                 if (_state.CurrentTool == EditorTool.Move &&
                     _state.SelectedBrush != null)
                 {
-                    BeginTransformDrag(EditorTool.Move);
-                    e.Handled = true;
+                    _activeTool = _moveTool;
+                    _activeTool.OnMouseDown(e);
                     return;
                 }
 
                 if (_state.CurrentTool == EditorTool.Rotate &&
                     _state.SelectedBrush != null)
                 {
-                    BeginTransformDrag(EditorTool.Rotate);
-                    e.Handled = true;
+                    _activeTool = _rotateTool;
+                    _activeTool.OnMouseDown(e);
                     return;
                 }
             }
@@ -159,26 +153,22 @@ namespace MapMaker.Editor.Input
             {
                 _rightMouseDown = true;
                 _lastMousePos = e.GetPosition(_viewport);
+
                 Mouse.Capture(_viewport);
+
                 e.Handled = true;
             }
         }
 
         public void HandleMouseUp(MouseButtonEventArgs e)
         {
-            if (_transformDragging)
+            if (_activeTool != null)
             {
-                if (e.ChangedButton == MouseButton.Left)
-                {
-                    CommitTransformDrag();
-                    e.Handled = true;
-                    return;
-                }
+                _activeTool.OnMouseUp(e);
 
-                if (e.ChangedButton == MouseButton.Right)
+                if (e.Handled)
                 {
-                    CancelTransformDrag(switchToSelect: true);
-                    e.Handled = true;
+                    _activeTool = null;
                     return;
                 }
             }
@@ -186,7 +176,9 @@ namespace MapMaker.Editor.Input
             if (e.ChangedButton == MouseButton.Right)
             {
                 _rightMouseDown = false;
+
                 Mouse.Capture(null);
+
                 e.Handled = true;
             }
         }
@@ -196,11 +188,12 @@ namespace MapMaker.Editor.Input
             if (_viewport == null)
                 return;
 
-            if (_transformDragging)
+            if (_activeTool != null)
             {
-                UpdateTransformDrag(e);
-                e.Handled = true;
-                return;
+                _activeTool.OnMouseMove(e);
+
+                if (e.Handled)
+                    return;
             }
 
             if (!_rightMouseDown)
@@ -228,7 +221,7 @@ namespace MapMaker.Editor.Input
 
         public void Update()
         {
-            if (_transformDragging)
+            if (_activeTool != null)
                 return;
 
             var camera = _state.Camera;
@@ -300,152 +293,6 @@ namespace MapMaker.Editor.Input
             SceneChanged?.Invoke();
 
             e.Handled = true;
-        }
-
-        #endregion
-
-        #region Transform Drag
-
-        private void BeginTransformDrag(EditorTool tool)
-        {
-            if (_viewport == null)
-                return;
-
-            if (_state.SelectedBrush == null)
-                return;
-
-            _transformDragging = true;
-            _rightMouseDown = false;
-
-            _transformTool = tool;
-            _transformBrush = _state.SelectedBrush;
-            _transformStartMousePos = Mouse.GetPosition(_viewport);
-
-            _transformOriginalFaces = _transformBrush.Faces
-                .Select(face => new FaceSnapshot(face))
-                .ToList();
-
-            Mouse.Capture(_viewport);
-        }
-
-        private void UpdateTransformDrag(MouseEventArgs e)
-        {
-            if (_viewport == null)
-                return;
-
-            if (_transformBrush == null || _transformOriginalFaces == null)
-                return;
-
-            var pos = e.GetPosition(_viewport);
-
-            float deltaX = (float)(pos.X - _transformStartMousePos.X);
-            float deltaY = (float)(pos.Y - _transformStartMousePos.Y);
-
-            RestoreTransformOriginal();
-
-            if (_transformTool == EditorTool.Move)
-            {
-                UpdateMoveDrag(deltaX, deltaY);
-            }
-            else if (_transformTool == EditorTool.Rotate)
-            {
-                UpdateRotateDrag(deltaX);
-            }
-
-            RequestSceneUpdate();
-        }
-
-        private void UpdateMoveDrag(float deltaX, float deltaY)
-        {
-            if (_transformBrush == null)
-                return;
-
-            // Első egyszerű verzió:
-            // egér X = world X
-            // egér Y = world Y
-            var delta = new Vector3(
-                deltaX * MouseMoveSensitivity,
-                -deltaY * MouseMoveSensitivity,
-                0);
-
-            BrushMover.MoveRaw(_transformBrush, delta);
-        }
-
-        private void UpdateRotateDrag(float deltaX)
-        {
-            if (_transformBrush == null)
-                return;
-
-            float degrees = deltaX * RotateMouseSensitivity;
-
-            BrushRotator.RotateAroundCenterZ(_transformBrush, degrees);
-        }
-
-        private void CommitTransformDrag()
-        {
-            if (!_transformDragging)
-                return;
-
-            _transformDragging = false;
-            _rightMouseDown = false;
-
-            _transformBrush = null;
-            _transformOriginalFaces = null;
-
-            Mouse.Capture(null);
-
-            _state.IsDirty = true;
-
-            SceneChanged?.Invoke();
-        }
-
-        private void CancelTransformDrag(bool switchToSelect)
-        {
-            if (!_transformDragging)
-                return;
-
-            RestoreTransformOriginal();
-
-            _transformDragging = false;
-            _rightMouseDown = false;
-
-            _transformBrush = null;
-            _transformOriginalFaces = null;
-
-            Mouse.Capture(null);
-
-            if (switchToSelect)
-                _state.CurrentTool = EditorTool.Select;
-
-            SceneChanged?.Invoke();
-        }
-
-        private void RestoreTransformOriginal()
-        {
-            if (_transformOriginalFaces == null)
-                return;
-
-            foreach (var snapshot in _transformOriginalFaces)
-            {
-                snapshot.Face.SetPoints(
-                    snapshot.P1,
-                    snapshot.P2,
-                    snapshot.P3);
-            }
-
-            _transformBrush?.Invalidate();
-        }
-
-        private void RequestSceneUpdate()
-        {
-            var now = DateTime.UtcNow;
-
-            if (now - _lastSceneUpdate < SceneUpdateInterval)
-                return;
-
-            _lastSceneUpdate = now;
-
-            SceneChanged?.Invoke();
         }
 
         #endregion

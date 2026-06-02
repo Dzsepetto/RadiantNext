@@ -1,10 +1,9 @@
 ﻿using MapMaker.Core.Builders;
 using MapMaker.Core.Geometry;
 using MapMaker.Core.Models;
+using MapMaker.Editor.Editor;
 using MapMaker.Editor.Input;
 using MapMaker.Editor.Models;
-using MapMaker.Editor.State;
-using MapMaker.Editor.Viewports;
 using System.Numerics;
 using System.Windows;
 using System.Windows.Controls;
@@ -12,9 +11,9 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Media3D;
 
-namespace MapMaker.Editor.Views
+namespace MapMaker.Editor.Rendering
 {
-    public partial class ViewportControl : UserControl
+    public partial class ViewPortControl : UserControl
     {
         private readonly Model3DGroup _scene = new();
 
@@ -31,7 +30,7 @@ namespace MapMaker.Editor.Views
         private Map? _currentMap;
         private float _gridSize = 16f;
 
-        public ViewportControl()
+        public ViewPortControl()
         {
             InitializeComponent();
             SetupScene();
@@ -101,14 +100,14 @@ namespace MapMaker.Editor.Views
                         if (model == null)
                             return HitTestResultBehavior.Continue;
 
-                        if (_state.SelectionMode == MapMaker.Editor.State.SelectionMode.Face &&
+                        if (_state.SelectionMode == Editor.SelectionMode.Face &&
                             _modelToFace.TryGetValue(model, out var face))
                         {
                             SelectFace(face);
                             return HitTestResultBehavior.Stop;
                         }
 
-                        if (_state.SelectionMode == MapMaker.Editor.State.SelectionMode.Object &&
+                        if (_state.SelectionMode == Editor.SelectionMode.Object &&
                             _modelToBrush.TryGetValue(model, out var brush))
                         {
                             SelectBrush(brush);

@@ -8,7 +8,7 @@ using System.Windows.Media;
 using System.Windows.Media.Media3D;
 using MapBrush = MapMaker.Core.Models.Brush;
 
-namespace MapMaker.Editor.Viewports
+namespace MapMaker.Editor.Rendering
 {
     public static class MapRenderer
     {

@@ -5,7 +5,7 @@ using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MapMaker.Editor.State
+namespace MapMaker.Editor.Editor
 {
     public sealed class EditorGrid
     {

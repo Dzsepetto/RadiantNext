@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using System.Windows.Media;
 using System.Windows.Media.Media3D;
 
-namespace MapMaker.Editor.Viewports
+namespace MapMaker.Editor.Rendering
 {
         public static class DebugLineBuilder
         {

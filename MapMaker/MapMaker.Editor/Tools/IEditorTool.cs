@@ -2,10 +2,11 @@
 
 namespace MapMaker.Editor.Tools
 {
-    public interface ITool
+    public interface IEditorTool
     {
         void OnMouseDown(MouseButtonEventArgs e);
         void OnMouseMove(MouseEventArgs e);
         void OnMouseUp(MouseButtonEventArgs e);
+        void Cancel();
     }
 }

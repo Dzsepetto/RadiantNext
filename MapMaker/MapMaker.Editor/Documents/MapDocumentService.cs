@@ -1,7 +1,7 @@
 ﻿using MapMaker.Core.IO;
 using MapMaker.Core.Models;
 
-namespace MapMaker.Editor.Services;
+namespace MapMaker.Editor.Documents;
 
 public class MapDocumentService
 {
@@ -10,6 +10,7 @@ public class MapDocumentService
     public bool IsDirty { get; private set; }
 
     public bool HasDocument => CurrentMap != null;
+    public bool NeedsSaveAs => string.IsNullOrWhiteSpace(FilePath);
 
     public void New()
     {
@@ -21,7 +22,6 @@ public class MapDocumentService
     public void Load(string filePath)
     {
         CurrentMap = MapParser.Load(filePath);
-
         FilePath = filePath;
         IsDirty = false;
     }
@@ -31,11 +31,10 @@ public class MapDocumentService
         if (CurrentMap == null)
             throw new InvalidOperationException("No map document is loaded.");
 
-        if (string.IsNullOrWhiteSpace(FilePath))
+        if (NeedsSaveAs)
             throw new InvalidOperationException("File path is not set. Use SaveAs instead.");
 
-        MapExporter.Save(CurrentMap, FilePath);
-
+        MapExporter.Save(CurrentMap, FilePath!);
         IsDirty = false;
     }
 
@@ -52,6 +51,9 @@ public class MapDocumentService
 
     public void MarkDirty()
     {
+        if (CurrentMap == null)
+            return;
+
         IsDirty = true;
     }
 

@@ -1,30 +1,37 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <OutputType>WinExe</OutputType>
-    <TargetFramework>net8.0-windows</TargetFramework>
-    <Nullable>enable</Nullable>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <UseWPF>true</UseWPF>
-  </PropertyGroup>
+	<PropertyGroup>
+		<OutputType>WinExe</OutputType>
+		<TargetFramework>net8.0-windows</TargetFramework>
+		<Nullable>enable</Nullable>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<UseWPF>true</UseWPF>
+	</PropertyGroup>
 
-  <ItemGroup>
-    <COMReference Include="{215d64d2-031c-33c7-96e3-61794cd1ee61}">
-      <WrapperTool>tlbimp</WrapperTool>
-      <VersionMinor>4</VersionMinor>
-      <VersionMajor>2</VersionMajor>
-      <Guid>215d64d2-031c-33c7-96e3-61794cd1ee61</Guid>
-    </COMReference>
-  </ItemGroup>
+	<ItemGroup>
+	  <Page Remove="App\App.xaml" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\MapMaker\MapMaker.Core.csproj" />
-  </ItemGroup>
+	<ItemGroup>
+	  <ApplicationDefinition Include="App\App.xaml" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <Page Update="MainWindow.xaml">
-      <Generator></Generator>
-    </Page>
-  </ItemGroup>
+	<ItemGroup>
+		<ApplicationDefinition Update="App\App.xaml">
+			<Generator>MSBuild:Compile</Generator>
+		</ApplicationDefinition>
+
+		<Page Update="App\MainWindow.xaml">
+			<Generator>MSBuild:Compile</Generator>
+		</Page>
+
+		<Page Update="Rendering\ViewPortControl.xaml">
+			<Generator>MSBuild:Compile</Generator>
+		</Page>
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\MapMaker\MapMaker.Core.csproj" />
+	</ItemGroup>
 
 </Project>

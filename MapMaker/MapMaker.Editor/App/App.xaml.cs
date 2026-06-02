@@ -2,7 +2,7 @@
 using System.Data;
 using System.Windows;
 
-namespace MapMaker.Editor
+namespace MapMaker.Editor.App
 {
     /// <summary>
     /// Interaction logic for App.xaml
