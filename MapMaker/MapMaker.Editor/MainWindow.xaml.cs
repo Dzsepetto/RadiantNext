@@ -15,6 +15,8 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using MapMaker.Editor.Services;
+using System.IO;
 
 namespace MapMaker.Editor
 {
@@ -25,6 +27,7 @@ namespace MapMaker.Editor
     {
         private EditorState _state = new();
         private InputController _input;
+        private readonly MapDocumentService _document = new();
         public MainWindow()
         {
             InitializeComponent();
@@ -64,29 +67,35 @@ namespace MapMaker.Editor
         }
         private void Open_Click(object sender, RoutedEventArgs e)
         {
-            var dialog = new OpenFileDialog();
-            dialog.Filter = "Map files (*.map)|*.map";
-
-            if (dialog.ShowDialog() == true)
+            var dialog = new OpenFileDialog
             {
-                var logger = new DebugLogger();
-                var map = MapParser.Load(dialog.FileName);
+                Filter = "Map files (*.map)|*.map"
+            };
 
-                _state.CurrentMap = map;
-                _state.CurrentFilePath = dialog.FileName;
-                _state.IsDirty = false;
+            if (dialog.ShowDialog() != true)
+                return;
 
-                Viewport.LoadMap(map);
-            }
+            _document.Load(dialog.FileName);
+
+            _state.CurrentMap = _document.CurrentMap!;
+            _state.CurrentFilePath = _document.FilePath;
+            _state.IsDirty = _document.IsDirty;
+
+            Viewport.LoadMap(_document.CurrentMap!);
+
+            Title = $"MapMaker Radiant - {System.IO.Path.GetFileName(dialog.FileName)}";
         }
         private void Save_Click(object sender, RoutedEventArgs e)
         {
-            if (string.IsNullOrWhiteSpace(_state.CurrentFilePath))
+            if (!_document.HasDocument)
                 return;
 
-            MapExporter.Save(_state.CurrentMap, _state.CurrentFilePath);
+            _document.Save();
 
-            _state.IsDirty = false;
+            _state.IsDirty = _document.IsDirty;
+
+            if (!string.IsNullOrWhiteSpace(_document.FilePath))
+                Title = $"MapMaker Radiant - {System.IO.Path.GetFileName(_document.FilePath)}";
         }
         private void ObjectSelect_Click(object sender, RoutedEventArgs e)
         {

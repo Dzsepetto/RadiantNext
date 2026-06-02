@@ -6,7 +6,7 @@ namespace MapMaker.Core.Builders
 {
     public static class BrushBuilder
     {
-        const float EPSILON = 0.01f;
+        const float EPSILON = 0.02f;
 
         public static void Build(Brush brush)
         {
@@ -16,33 +16,37 @@ namespace MapMaker.Core.Builders
 
             GenerateFacePolygons(brush, buildFaces, vertices);
         }
-
         private static List<Face> CreateBuildFacesWithFixedNormals(Brush brush)
         {
             var buildFaces = brush.Faces.ToList();
 
-            var points = GenerateVerticesRaw(buildFaces);
-
-            if (points.Count == 0)
-                return buildFaces;
-
-            var center = Vector3.Zero;
-
-            foreach (var v in points)
-                center += v;
-
-            center /= points.Count;
+            var center = EstimateBrushCenterFromFacePoints(buildFaces);
 
             for (int i = 0; i < buildFaces.Count; i++)
             {
                 var face = buildFaces[i];
-                float d = face.Plane.DistanceToPoint(center);
 
-                if (d > 0)
+                if (face.Plane.DistanceToPoint(center) > 0)
                     buildFaces[i] = face.Flip();
             }
 
             return buildFaces;
+        }
+
+        private static Vector3 EstimateBrushCenterFromFacePoints(List<Face> faces)
+        {
+            var sum = Vector3.Zero;
+            int count = 0;
+
+            foreach (var face in faces)
+            {
+                sum += face.P1;
+                sum += face.P2;
+                sum += face.P3;
+                count += 3;
+            }
+
+            return sum / count;
         }
 
         public static List<Vector3> GenerateVertices(List<Face> faces)
@@ -161,31 +165,6 @@ namespace MapMaker.Core.Builders
             }
 
             return sorted;
-        }
-
-        private static List<Vector3> GenerateVerticesRaw(List<Face> faces)
-        {
-            var vertices = new List<Vector3>();
-            int count = faces.Count;
-
-            for (int i = 0; i < count - 2; i++)
-            {
-                for (int j = i + 1; j < count - 1; j++)
-                {
-                    for (int k = j + 1; k < count; k++)
-                    {
-                        var p = Plane3D.Intersect(
-                            faces[i].Plane,
-                            faces[j].Plane,
-                            faces[k].Plane);
-
-                        if (p != null)
-                            vertices.Add(p.Value);
-                    }
-                }
-            }
-
-            return vertices;
         }
     }
 }

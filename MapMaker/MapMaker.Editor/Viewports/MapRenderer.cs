@@ -1,6 +1,8 @@
 ﻿using MapMaker.Core.Builders;
 using MapMaker.Core.Geometry;
 using MapMaker.Core.Models;
+using MapMaker.Core.Validation;
+using System.Diagnostics;
 using System.Numerics;
 using System.Windows.Media;
 using System.Windows.Media.Media3D;
@@ -23,7 +25,17 @@ namespace MapMaker.Editor.Viewports
             {
                 foreach (var brush in entity.Brushes)
                 {
-                    BrushBuilder.Build(brush);
+                    var issues = BrushValidator.Validate(brush);
+
+                    if (issues.Count > 0)
+                    {
+                        Debug.WriteLine("---- BRUSH VALIDATION ----");
+
+                        foreach (var issue in issues)
+                        {
+                            Debug.WriteLine(issue.ToString());
+                        }
+                    }
 
                     foreach (var face in brush.Faces)
                     {
@@ -36,6 +48,7 @@ namespace MapMaker.Editor.Viewports
                             modelToBrush,
                             brushToModels);
                     }
+                   
                 }
             }
         }
