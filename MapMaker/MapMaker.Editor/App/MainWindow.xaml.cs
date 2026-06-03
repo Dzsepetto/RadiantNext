@@ -13,11 +13,10 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
-using System.IO;
 using System.ComponentModel;
 using MapMaker.Editor.Documents;
 using MapMaker.Editor.Editor;
-using MapMaker.Editor.Rendering;
+using MapMaker.Editor.Diagnostics;
 
 namespace MapMaker.Editor.App
 {
@@ -29,6 +28,8 @@ namespace MapMaker.Editor.App
         private EditorState _state = new();
         private InputController _input;
         private readonly MapDocumentService _document = new();
+        private readonly EditorDiagnosticsService _diagnostics = new();
+        private readonly EditorLogService _log = new();
         public MainWindow()
         {
             InitializeComponent();
@@ -70,6 +71,7 @@ namespace MapMaker.Editor.App
                 }
 
                 Viewport.Refresh();
+                RunDiagnostics();
             };
 
             Closing += MainWindow_Closing;
@@ -87,6 +89,7 @@ namespace MapMaker.Editor.App
             Viewport.LoadMap(_document.CurrentMap!);
 
             UpdateWindowTitle();
+            RunDiagnostics();
         }
         private void Open_Click(object sender, RoutedEventArgs e)
         {
@@ -108,6 +111,7 @@ namespace MapMaker.Editor.App
             Viewport.LoadMap(_document.CurrentMap!);
 
             UpdateWindowTitle();
+            RunDiagnostics();
         }
         private void Save_Click(object sender, RoutedEventArgs e)
         {
@@ -269,6 +273,11 @@ namespace MapMaker.Editor.App
             var dirtyMark = _document.IsDirty ? "*" : "";
 
             Title = $"MapMaker Radiant - {fileName}{dirtyMark}";
+        }
+        private void RunDiagnostics()
+        {
+            var result = _diagnostics.Analyze(_document.CurrentMap);
+            _log.LogDiagnostics(result);
         }
     }
 }
