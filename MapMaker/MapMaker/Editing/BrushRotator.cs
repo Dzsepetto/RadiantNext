@@ -1,15 +1,12 @@
 ﻿using MapMaker.Core.Models;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Numerics;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace MapMaker.Core.Editing
 {
     public static class BrushRotator
     {
+        private const float DuplicateEpsilon = 0.01f;
+
         public static void RotateAroundCenterZ(Brush brush, float degrees)
         {
             var center = GetCenter(brush);
@@ -35,29 +32,39 @@ namespace MapMaker.Core.Editing
 
         private static Vector3 GetCenter(Brush brush)
         {
-            var points = brush.Faces
-                .SelectMany(face => new[]
-                {
-                    face.P1,
-                    face.P2,
-                    face.P3
-                })
-                .ToList();
+            var uniquePoints = new List<Vector3>();
 
-            if (points.Count == 0)
+            foreach (var face in brush.Faces)
+            {
+                AddUnique(uniquePoints, face.P1);
+                AddUnique(uniquePoints, face.P2);
+                AddUnique(uniquePoints, face.P3);
+            }
+
+            if (uniquePoints.Count == 0)
                 return Vector3.Zero;
 
             var min = new Vector3(
-                points.Min(p => p.X),
-                points.Min(p => p.Y),
-                points.Min(p => p.Z));
+                uniquePoints.Min(p => p.X),
+                uniquePoints.Min(p => p.Y),
+                uniquePoints.Min(p => p.Z));
 
             var max = new Vector3(
-                points.Max(p => p.X),
-                points.Max(p => p.Y),
-                points.Max(p => p.Z));
+                uniquePoints.Max(p => p.X),
+                uniquePoints.Max(p => p.Y),
+                uniquePoints.Max(p => p.Z));
 
             return (min + max) * 0.5f;
+        }
+
+        private static void AddUnique(List<Vector3> points, Vector3 point)
+        {
+            bool exists = points.Any(existing =>
+                Vector3.DistanceSquared(existing, point) <
+                DuplicateEpsilon * DuplicateEpsilon);
+
+            if (!exists)
+                points.Add(point);
         }
     }
 }
