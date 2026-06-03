@@ -15,11 +15,45 @@ public class MoveTool : TransformToolBase
 
     protected override void ApplyTransform(Brush brush, float deltaX, float deltaY)
     {
-        var delta = new Vector3(
-            deltaX * MouseMoveSensitivity,
-            -deltaY * MouseMoveSensitivity,
+        var camera = State.Camera;
+
+        var horizontalForward = new Vector3(
+            camera.Forward.X,
+            camera.Forward.Y,
             0);
 
-        BrushMover.MoveRaw(brush, delta);
+        if (horizontalForward.LengthSquared() < 0.0001f)
+            horizontalForward = Vector3.UnitY;
+        else
+            horizontalForward = Vector3.Normalize(horizontalForward);
+
+        var horizontalRight = new Vector3(
+            camera.Right.X,
+            camera.Right.Y,
+            0);
+
+        if (horizontalRight.LengthSquared() < 0.0001f)
+            horizontalRight = Vector3.UnitX;
+        else
+            horizontalRight = Vector3.Normalize(horizontalRight);
+
+        var rawDelta =
+            horizontalRight * deltaX * MouseMoveSensitivity +
+            horizontalForward * -deltaY * MouseMoveSensitivity;
+
+        var snappedDelta = SnapDeltaToGrid(rawDelta, State.Grid.Size);
+
+        BrushMover.MoveRaw(brush, snappedDelta);
+    }
+
+    private static Vector3 SnapDeltaToGrid(Vector3 delta, float gridSize)
+    {
+        if (gridSize <= 0)
+            return delta;
+
+        return new Vector3(
+            MathF.Round(delta.X / gridSize) * gridSize,
+            MathF.Round(delta.Y / gridSize) * gridSize,
+            MathF.Round(delta.Z / gridSize) * gridSize);
     }
 }

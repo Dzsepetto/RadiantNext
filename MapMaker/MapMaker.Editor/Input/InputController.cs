@@ -28,8 +28,6 @@ namespace MapMaker.Editor.Input
         private IEditorTool? _activeTool;
 
         public event Action? SceneChanged;
-        public event Action<Brush>? BrushChanged;
-
         public InputController(EditorState state)
         {
             _state = state;
