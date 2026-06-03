@@ -1,11 +1,11 @@
-﻿using System;
+﻿using MapMaker.Core.Editing;
+using MapMaker.Editor.Commands;
+using MapMaker.Editor.Editor;
+using MapMaker.Editor.Tools;
+using System;
 using System.Numerics;
 using System.Windows;
 using System.Windows.Input;
-using MapMaker.Core.Editing;
-using MapMaker.Core.Models;
-using MapMaker.Editor.Editor;
-using MapMaker.Editor.Tools;
 
 namespace MapMaker.Editor.Input
 {
@@ -28,6 +28,7 @@ namespace MapMaker.Editor.Input
         private IEditorTool? _activeTool;
 
         public event Action? SceneChanged;
+
         public InputController(EditorState state)
         {
             _state = state;
@@ -50,16 +51,35 @@ namespace MapMaker.Editor.Input
             _rotateTool.SetViewport(element);
         }
 
-        #region Keyboard
-
         public void HandleKeyDown(KeyEventArgs e)
         {
             if (e.Key == Key.Escape && _activeTool != null)
             {
                 _activeTool.Cancel();
                 _activeTool = null;
-
                 _state.CurrentTool = EditorTool.Select;
+
+                e.Handled = true;
+                return;
+            }
+
+            if (Keyboard.Modifiers.HasFlag(ModifierKeys.Control) && e.Key == Key.Z)
+            {
+                _state.History.Undo();
+                _state.IsDirty = true;
+
+                SceneChanged?.Invoke();
+
+                e.Handled = true;
+                return;
+            }
+
+            if (Keyboard.Modifiers.HasFlag(ModifierKeys.Control) && e.Key == Key.Y)
+            {
+                _state.History.Redo();
+                _state.IsDirty = true;
+
+                SceneChanged?.Invoke();
 
                 e.Handled = true;
                 return;
@@ -105,27 +125,20 @@ namespace MapMaker.Editor.Input
             if (e.Key == Key.E) _e = false;
         }
 
-        #endregion
-
-        #region Mouse
-
         public void HandleMouseDown(MouseButtonEventArgs e)
         {
             if (_viewport == null)
                 return;
 
-            if (_activeTool != null)
+            if (_activeTool != null && e.ChangedButton == MouseButton.Right)
             {
-                if (e.ChangedButton == MouseButton.Right)
-                {
-                    _activeTool.Cancel();
-                    _activeTool = null;
+                _activeTool.Cancel();
+                _activeTool = null;
 
-                    _state.CurrentTool = EditorTool.Select;
+                _state.CurrentTool = EditorTool.Select;
 
-                    e.Handled = true;
-                    return;
-                }
+                e.Handled = true;
+                return;
             }
 
             if (e.ChangedButton == MouseButton.Left)
@@ -215,8 +228,6 @@ namespace MapMaker.Editor.Input
             e.Handled = true;
         }
 
-        #endregion
-
         public void Update()
         {
             if (_activeTool != null)
@@ -231,8 +242,6 @@ namespace MapMaker.Editor.Input
             if (_q) camera.Position += Vector3.UnitZ * MoveSpeed;
             if (_e) camera.Position -= Vector3.UnitZ * MoveSpeed;
         }
-
-        #region Keyboard Move
 
         private void HandleMoveKeys(KeyEventArgs e)
         {
@@ -275,7 +284,20 @@ namespace MapMaker.Editor.Input
 
             if (_state.SelectedBrush != null)
             {
-                BrushMover.Move(_state.SelectedBrush, delta, step);
+                var brush = _state.SelectedBrush;
+
+                var before = brush.Faces
+                    .Select(face => new BrushFaceSnapshot(face))
+                    .ToList();
+
+                BrushMover.Move(brush, delta, step);
+
+                var after = brush.Faces
+                    .Select(face => new BrushFaceSnapshot(face))
+                    .ToList();
+
+                _state.History.PushExecuted(
+                    new MoveBrushCommand(brush, before, after));
             }
             else if (_state.SelectedFace != null)
             {
@@ -292,7 +314,5 @@ namespace MapMaker.Editor.Input
 
             e.Handled = true;
         }
-
-        #endregion
     }
 }

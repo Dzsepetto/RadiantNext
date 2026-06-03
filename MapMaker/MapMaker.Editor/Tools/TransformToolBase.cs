@@ -1,6 +1,6 @@
 ﻿using MapMaker.Core.Models;
+using MapMaker.Editor.Commands;
 using MapMaker.Editor.Editor;
-using System.Numerics;
 using System.Windows;
 using System.Windows.Input;
 
@@ -14,7 +14,7 @@ public abstract class TransformToolBase : IEditorTool
     private bool _dragging;
     private Point _startMousePos;
     private Brush? _brush;
-    private List<FaceSnapshot>? _originalFaces;
+    private List<BrushFaceSnapshot>? _before;
 
     public event Action? SceneChanged;
     public event Action? Committed;
@@ -44,9 +44,7 @@ public abstract class TransformToolBase : IEditorTool
         _brush = State.SelectedBrush;
         _startMousePos = Mouse.GetPosition(Viewport);
 
-        _originalFaces = _brush.Faces
-            .Select(face => new FaceSnapshot(face))
-            .ToList();
+        _before = CreateSnapshot(_brush);
 
         Mouse.Capture(Viewport);
 
@@ -55,7 +53,7 @@ public abstract class TransformToolBase : IEditorTool
 
     public virtual void OnMouseMove(MouseEventArgs e)
     {
-        if (!_dragging || Viewport == null || _brush == null)
+        if (!_dragging || Viewport == null || _brush == null || _before == null)
             return;
 
         var pos = e.GetPosition(Viewport);
@@ -63,7 +61,7 @@ public abstract class TransformToolBase : IEditorTool
         float deltaX = (float)(pos.X - _startMousePos.X);
         float deltaY = (float)(pos.Y - _startMousePos.Y);
 
-        RestoreOriginal();
+        Restore(_before, _brush);
 
         ApplyTransform(_brush, deltaX, deltaY);
 
@@ -80,15 +78,26 @@ public abstract class TransformToolBase : IEditorTool
         if (e.ChangedButton != MouseButton.Left)
             return;
 
+        if (_brush != null && _before != null)
+        {
+            var after = CreateSnapshot(_brush);
+
+            if (HasChanged(_before, after))
+            {
+                var command = CreateCommand(_brush, _before, after);
+                State.History.PushExecuted(command);
+
+                State.IsDirty = true;
+                Committed?.Invoke();
+            }
+        }
+
         _dragging = false;
         _brush = null;
-        _originalFaces = null;
+        _before = null;
 
         Mouse.Capture(null);
 
-        State.IsDirty = true;
-
-        Committed?.Invoke();
         SceneChanged?.Invoke();
 
         e.Handled = true;
@@ -99,11 +108,12 @@ public abstract class TransformToolBase : IEditorTool
         if (!_dragging)
             return;
 
-        RestoreOriginal();
+        if (_brush != null && _before != null)
+            Restore(_before, _brush);
 
         _dragging = false;
         _brush = null;
-        _originalFaces = null;
+        _before = null;
 
         Mouse.Capture(null);
 
@@ -112,35 +122,37 @@ public abstract class TransformToolBase : IEditorTool
 
     protected abstract void ApplyTransform(Brush brush, float deltaX, float deltaY);
 
-    private void RestoreOriginal()
+    protected abstract IEditorCommand CreateCommand(
+        Brush brush,
+        List<BrushFaceSnapshot> before,
+        List<BrushFaceSnapshot> after);
+
+    private static List<BrushFaceSnapshot> CreateSnapshot(Brush brush)
     {
-        if (_originalFaces == null)
-            return;
-
-        foreach (var snapshot in _originalFaces)
-        {
-            snapshot.Face.SetPoints(
-                snapshot.P1,
-                snapshot.P2,
-                snapshot.P3);
-        }
-
-        _brush?.Invalidate();
+        return brush.Faces
+            .Select(face => new BrushFaceSnapshot(face))
+            .ToList();
     }
 
-    private sealed class FaceSnapshot
+    private static void Restore(List<BrushFaceSnapshot> snapshots, Brush brush)
     {
-        public Face Face { get; }
-        public Vector3 P1 { get; }
-        public Vector3 P2 { get; }
-        public Vector3 P3 { get; }
+        foreach (var snapshot in snapshots)
+            snapshot.Restore();
 
-        public FaceSnapshot(Face face)
+        brush.Invalidate();
+    }
+
+    private static bool HasChanged(
+        List<BrushFaceSnapshot> before,
+        List<BrushFaceSnapshot> after)
+    {
+        for (int i = 0; i < before.Count; i++)
         {
-            Face = face;
-            P1 = face.P1;
-            P2 = face.P2;
-            P3 = face.P3;
+            if (before[i].P1 != after[i].P1) return true;
+            if (before[i].P2 != after[i].P2) return true;
+            if (before[i].P3 != after[i].P3) return true;
         }
+
+        return false;
     }
 }

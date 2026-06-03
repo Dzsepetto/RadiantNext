@@ -1,6 +1,7 @@
 ﻿using MapMaker.Core.Models;
 using MapMaker.Editor.Models;
 using System.Numerics;
+using MapMaker.Editor.Commands;
 
 namespace MapMaker.Editor.Editor
 {
@@ -41,6 +42,7 @@ namespace MapMaker.Editor.Editor
 
         public string? CurrentFilePath { get; set; }
         public bool IsDirty { get; set; }
+        public CommandHistory History { get; } = new();
 
 
         public void ClearSelection()

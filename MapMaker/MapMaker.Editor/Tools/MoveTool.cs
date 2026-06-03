@@ -2,6 +2,7 @@
 using MapMaker.Core.Models;
 using MapMaker.Editor.Editor;
 using System.Numerics;
+using MapMaker.Editor.Commands;
 
 namespace MapMaker.Editor.Tools;
 
@@ -55,5 +56,12 @@ public class MoveTool : TransformToolBase
             MathF.Round(delta.X / gridSize) * gridSize,
             MathF.Round(delta.Y / gridSize) * gridSize,
             MathF.Round(delta.Z / gridSize) * gridSize);
+    }
+    protected override IEditorCommand CreateCommand(
+    Brush brush,
+    List<BrushFaceSnapshot> before,
+    List<BrushFaceSnapshot> after)
+    {
+        return new MoveBrushCommand(brush, before, after);
     }
 }
