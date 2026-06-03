@@ -12,9 +12,10 @@
         <!-- Top Menu -->
         <Menu DockPanel.Dock="Top">
             <MenuItem Header="File">
-                <MenuItem Header="New"/>
+                <MenuItem Header="New" Click="New_Click"/>
                 <MenuItem Header="Open" Click="Open_Click" />
                 <MenuItem Header="Save" Click="Save_Click"/>
+                <MenuItem Header="Save As..." Click="SaveAs_Click"/>
             </MenuItem>
             <MenuItem x:Name="GridMenu" Header="Grid" >
                 <MenuItem Header="1" Click="GridSize_Click"/>

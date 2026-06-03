@@ -75,6 +75,19 @@ namespace MapMaker.Editor.App
             Closing += MainWindow_Closing;
 
         }
+        private void New_Click(object sender, RoutedEventArgs e)
+        {
+            if (!ConfirmSaveIfDirty())
+                return;
+
+            _document.New();
+
+            SyncStateFromDocument();
+
+            Viewport.LoadMap(_document.CurrentMap!);
+
+            UpdateWindowTitle();
+        }
         private void Open_Click(object sender, RoutedEventArgs e)
         {
             if (!ConfirmSaveIfDirty())
@@ -90,17 +103,19 @@ namespace MapMaker.Editor.App
 
             _document.Load(dialog.FileName);
 
-            _state.CurrentMap = _document.CurrentMap!;
-            _state.CurrentFilePath = _document.FilePath;
-            _state.IsDirty = _document.IsDirty;
+            SyncStateFromDocument();
 
             Viewport.LoadMap(_document.CurrentMap!);
 
-            Title = $"MapMaker Radiant - {System.IO.Path.GetFileName(dialog.FileName)}";
+            UpdateWindowTitle();
         }
         private void Save_Click(object sender, RoutedEventArgs e)
         {
             SaveCurrentDocument();
+        }
+        private void SaveAs_Click(object sender, RoutedEventArgs e)
+        {
+            SaveCurrentDocumentAs();
         }
 
         private bool SaveCurrentDocument()
@@ -111,12 +126,7 @@ namespace MapMaker.Editor.App
             if (_document.NeedsSaveAs)
                 return SaveCurrentDocumentAs();
 
-            _document.Save();
-
-            SyncStateFromDocument();
-            UpdateWindowTitle();
-
-            return true;
+            return TrySave(() => _document.Save());
         }
 
         private bool SaveCurrentDocumentAs()
@@ -134,12 +144,36 @@ namespace MapMaker.Editor.App
             if (dialog.ShowDialog() != true)
                 return false;
 
-            _document.SaveAs(dialog.FileName);
+            return TrySave(() => _document.SaveAs(dialog.FileName));
+        }
 
-            SyncStateFromDocument();
-            UpdateWindowTitle();
+        private bool TrySave(Action saveAction)
+        {
+            try
+            {
+                saveAction();
 
-            return true;
+                SyncStateFromDocument();
+                UpdateWindowTitle();
+
+                MessageBox.Show(
+                    "Map saved successfully.",
+                    "Save successful",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    $"Failed to save map.\n\n{ex.Message}",
+                    "Save failed",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+
+                return false;
+            }
         }
         private void ObjectSelect_Click(object sender, RoutedEventArgs e)
         {
@@ -220,11 +254,12 @@ namespace MapMaker.Editor.App
 
         private void SyncStateFromDocument()
         {
-            _state.CurrentMap = _document.CurrentMap;
+            if (_document.CurrentMap != null)
+                _state.CurrentMap = _document.CurrentMap;
+
             _state.CurrentFilePath = _document.FilePath;
             _state.IsDirty = _document.IsDirty;
         }
-
         private void UpdateWindowTitle()
         {
             var fileName = string.IsNullOrWhiteSpace(_document.FilePath)
