@@ -1,31 +1,37 @@
 ﻿using MapMaker.Core.Models;
 using MapMaker.Editor.Editor;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace MapMaker.Editor.Selection
+namespace MapMaker.Editor.Selection;
+
+public sealed class SelectionService
 {
-    public class SelectionService
+    private readonly EditorState _state;
+
+    public SelectionService(EditorState state)
     {
-        private readonly EditorState _state;
+        _state = state;
+    }
 
-        public SelectionService(EditorState state)
+    public void Select(PickResult result)
+    {
+        ClearSelection();
+
+        if (result.Face != null)
         {
-            _state = state;
+            _state.SelectedFace = result.Face;
+            return;
         }
 
-        public void SelectFace(Face face)
+        if (result.Brush != null)
         {
-            _state.SelectedFace = face;
+            _state.SelectedBrush = result.Brush;
         }
+    }
 
-        public void ClearSelection()
-        {
-            _state.SelectedFace = null;
-            _state.SelectedBrush = null;
-        }
+    public void ClearSelection()
+    {
+        _state.SelectedObject = null;
+        _state.SelectedFace = null;
+        _state.SelectedBrush = null;
     }
 }

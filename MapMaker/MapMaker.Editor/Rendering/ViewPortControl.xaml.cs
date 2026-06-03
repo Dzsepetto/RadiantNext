@@ -10,6 +10,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Media3D;
+using MapMaker.Editor.Selection;
 
 namespace MapMaker.Editor.Rendering
 {
@@ -24,11 +25,14 @@ namespace MapMaker.Editor.Rendering
 
         private EditorState? _state;
 
-        private Face? _selectedFace;
         private InputController? _input;
 
         private Map? _currentMap;
         private float _gridSize = 16f;
+
+        private ViewportPicker? _picker;
+        private SelectionService? _selectionService;
+        private SelectionVisualService? _selectionVisualService;
 
         public ViewPortControl()
         {
@@ -46,6 +50,20 @@ namespace MapMaker.Editor.Rendering
             _state = state;
 
             _input.SetViewport(this);
+
+            _picker = new ViewportPicker(
+                state,
+                Viewport3DControl,
+                _modelToFace,
+                _modelToBrush);
+
+            _selectionService = new SelectionService(state);
+
+            _selectionVisualService = new SelectionVisualService(
+                state,
+                _modelToFace,
+                _faceToModel,
+                _brushToModels);
         }
 
         #region Mouse Handling
@@ -83,85 +101,23 @@ namespace MapMaker.Editor.Rendering
 
         private void HandleSelection(MouseButtonEventArgs e)
         {
-            if (_state == null)
+            if (_state == null ||
+                _picker == null ||
+                _selectionService == null ||
+                _selectionVisualService == null)
+            {
                 return;
+            }
 
             var pos = e.GetPosition(Viewport3DControl);
+            var result = _picker.Pick(pos);
 
-            VisualTreeHelper.HitTest(
-                Viewport3DControl,
-                null,
-                result =>
-                {
-                    if (result is RayMeshGeometry3DHitTestResult meshResult)
-                    {
-                        var model = meshResult.ModelHit as GeometryModel3D;
+            if (result.HasHit)
+                _selectionService.Select(result);
+            else
+                _selectionService.ClearSelection();
 
-                        if (model == null)
-                            return HitTestResultBehavior.Continue;
-
-                        if (_state.SelectionMode == Editor.SelectionMode.Face &&
-                            _modelToFace.TryGetValue(model, out var face))
-                        {
-                            SelectFace(face);
-                            return HitTestResultBehavior.Stop;
-                        }
-
-                        if (_state.SelectionMode == Editor.SelectionMode.Object &&
-                            _modelToBrush.TryGetValue(model, out var brush))
-                        {
-                            SelectBrush(brush);
-                            return HitTestResultBehavior.Stop;
-                        }
-                    }
-
-                    return HitTestResultBehavior.Continue;
-                },
-                new PointHitTestParameters(pos));
-        }
-
-        private void SelectFace(Face face)
-        {
-            ClearSelectionVisuals();
-
-            _state?.ClearSelection();
-            if (_state != null)
-                _state.SelectedFace = face;
-
-            _selectedFace = face;
-
-            if (_faceToModel.TryGetValue(face, out var model))
-            {
-                model.Material = new DiffuseMaterial(
-                    new SolidColorBrush(Colors.Yellow));
-            }
-        }
-        private void SelectBrush(MapMaker.Core.Models.Brush brush)
-        {
-            ClearSelectionVisuals();
-
-            _state?.ClearSelection();
-            if (_state != null)
-                _state.SelectedBrush = brush;
-
-            if (_brushToModels.TryGetValue(brush, out var models))
-            {
-                foreach (var model in models)
-                {
-                    model.Material = new DiffuseMaterial(
-                        new SolidColorBrush(Colors.Orange));
-                }
-            }
-        }
-        private void ClearSelectionVisuals()
-        {
-            foreach (var model in _modelToFace.Keys)
-            {
-                model.Material = new DiffuseMaterial(
-                    new SolidColorBrush(Color.FromRgb(180, 180, 180)));
-            }
-
-            _selectedFace = null;
+            _selectionVisualService.ApplySelection();
         }
 
         #endregion
@@ -230,7 +186,6 @@ namespace MapMaker.Editor.Rendering
             _modelToBrush.Clear();
             _brushToModels.Clear();
 
-            _selectedFace = null;
 
             _scene.Children.Add(new AmbientLight(Colors.White));
 
@@ -241,32 +196,7 @@ namespace MapMaker.Editor.Rendering
                 MapRenderer.AddMap(_scene, _currentMap, _modelToFace, _faceToModel, _modelToBrush, _brushToModels);
             }
 
-            RestoreSelectionVisuals();
-        }
-
-        private void RestoreSelectionVisuals()
-        {
-            if (_state == null)
-                return;
-
-            if (_state.SelectedFace != null &&
-                _faceToModel.TryGetValue(_state.SelectedFace, out var faceModel))
-            {
-                faceModel.Material = new DiffuseMaterial(
-                    new SolidColorBrush(Colors.Yellow));
-
-                _selectedFace = _state.SelectedFace;
-            }
-
-            if (_state.SelectedBrush != null &&
-                _brushToModels.TryGetValue(_state.SelectedBrush, out var brushModels))
-            {
-                foreach (var model in brushModels)
-                {
-                    model.Material = new DiffuseMaterial(
-                        new SolidColorBrush(Colors.Orange));
-                }
-            }
+            _selectionVisualService?.ApplySelection();
         }
         #endregion
     }
