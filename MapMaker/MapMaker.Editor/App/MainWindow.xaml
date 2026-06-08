@@ -9,13 +9,16 @@
 
     <DockPanel>
 
-        <!-- Top Menu -->
         <Menu DockPanel.Dock="Top">
             <MenuItem Header="File">
                 <MenuItem Header="New" Click="New_Click"/>
                 <MenuItem Header="Open" Click="Open_Click" />
                 <MenuItem Header="Save" Click="Save_Click"/>
                 <MenuItem Header="Save As..." Click="SaveAs_Click"/>
+            </MenuItem>
+            <MenuItem Header="Edit">
+                <MenuItem x:Name="MenuUndo" Header="Undo (Ctrl+Z)" Click="Undo_Click"/>
+                <MenuItem x:Name="MenuRedo" Header="Redo (Ctrl+Y)" Click="Redo_Click"/>
             </MenuItem>
             <MenuItem x:Name="GridMenu" Header="Grid" >
                 <MenuItem Header="1" Click="GridSize_Click"/>
@@ -28,68 +31,57 @@
             </MenuItem>
         </Menu>
 
-        <!-- Top Toolbar -->
-        <Border DockPanel.Dock="Top"
-        Height="28"
-        Background="#252526">
-            <StackPanel Orientation="Horizontal"
-                VerticalAlignment="Center"
-                Margin="10,0,0,0">
+        <Border DockPanel.Dock="Top" Height="28" Background="#252526">
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="10,0,0,0">
 
-                <TextBlock x:Name="GridSizeText"
-                   Text="Grid: 16"
-                   Foreground="White"
-                   VerticalAlignment="Center"
-                   Margin="0,0,10,0"/>
-
-                <TextBlock x:Name="WorldPositionText"
-                   Text="X: 0  Y: 0  Z: 0"
-                   Foreground="White"
-                   VerticalAlignment="Center"/>
+                <Button x:Name="BtnUndo" 
+                        Content="↶ Undo" 
+                        Click="Undo_Click" 
+                        Margin="0,0,5,0" 
+                        Style="{StaticResource DarkToolbarButtonStyle}"/>
                 
+                <Button x:Name="BtnRedo" 
+                        Content="↷ Redo" 
+                        Click="Redo_Click" 
+                        Margin="0,0,10,0" 
+                        Style="{StaticResource DarkToolbarButtonStyle}"/>
+
+
+
+                <Separator Margin="0,0,10,0"/>
+
+                <TextBlock x:Name="GridSizeText" Text="Grid: 16" Foreground="White" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                <TextBlock x:Name="WorldPositionText" Text="X: 0  Y: 0  Z: 0" Foreground="White" VerticalAlignment="Center"/>
+
                 <Separator Margin="10,0"/>
-                
+
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition/>
                         <ColumnDefinition/>
                     </Grid.ColumnDefinitions>
-                    <RadioButton Content="Object"
-             Grid.Column="0"
-             GroupName="SelectionMode"
-             IsChecked="True"
-             Click="ObjectSelect_Click"
-             Style="{StaticResource {x:Type ToggleButton}}"/>
+                    <RadioButton Content="Object" 
+                     Grid.Column="0" 
+                     GroupName="SelectionMode" 
+                     IsChecked="True" 
+                     Click="ObjectSelect_Click" 
+                     Style="{StaticResource DarkToolbarToggleButtonStyle}"/>
 
-                    <RadioButton Content="Face"
-             Grid.Column="1"
-             GroupName="SelectionMode"
-             Click="FaceSelect_Click"
-             Style="{StaticResource {x:Type ToggleButton}}"/>
+                            <RadioButton Content="Face" 
+                     Grid.Column="1" 
+                     GroupName="SelectionMode" 
+                     Click="FaceSelect_Click" 
+                     Style="{StaticResource DarkToolbarToggleButtonStyle}"/>
                 </Grid>
-                
+
             </StackPanel>
         </Border>
 
-        <!-- Left Tools Panel -->
-        <Border DockPanel.Dock="Left"
-                Width="100"
-                Background="#2a2a2a">
+        <Border DockPanel.Dock="Left" Width="100" Background="#2a2a2a">
             <StackPanel>
-                <RadioButton Content="Select"
-             GroupName="EditorTool"
-             IsChecked="True"
-             Click="SelectTool_Click"
-                Style="{StaticResource {x:Type ToggleButton}}"/>
-
-                <RadioButton Content="Move"
-             GroupName="EditorTool"
-             Click="MoveTool_Click"
-                Style="{StaticResource {x:Type ToggleButton}}"/>
-                <RadioButton Content="Rotate"
-             GroupName="EditorTool"
-             Click="RotateTool_Click"
-             Style="{StaticResource {x:Type ToggleButton}}"/>
+                <RadioButton Content="Select" GroupName="EditorTool" IsChecked="True" Click="SelectTool_Click" Style="{StaticResource {x:Type ToggleButton}}"/>
+                <RadioButton Content="Move" GroupName="EditorTool" Click="MoveTool_Click" Style="{StaticResource {x:Type ToggleButton}}"/>
+                <RadioButton Content="Rotate" GroupName="EditorTool" Click="RotateTool_Click" Style="{StaticResource {x:Type ToggleButton}}"/>
             </StackPanel>
         </Border>
 

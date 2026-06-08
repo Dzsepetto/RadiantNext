@@ -30,14 +30,13 @@ namespace MapMaker.Editor.App
         private readonly MapDocumentService _document = new();
         private readonly EditorDiagnosticsService _diagnostics = new();
         private readonly EditorLogService _log = new();
+
         public MainWindow()
         {
             InitializeComponent();
 
             _input = new InputController(_state);
-
             Viewport.SetInput(_input, _state);
-
 
             this.PreviewKeyDown += (s, e) => _input.HandleKeyDown(e);
             this.PreviewKeyUp += (s, e) => _input.HandleKeyUp(e);
@@ -59,38 +58,77 @@ namespace MapMaker.Editor.App
                         item.IsChecked = true;
                     }
                 }
+                UpdateUndoRedoUI();
             };
 
             _input.SceneChanged += () =>
             {
-                if (_state.IsDirty)
-                {
-                    _document.MarkDirty();
-                    _state.IsDirty = _document.IsDirty;
-                    UpdateWindowTitle();
-                }
-
-                Viewport.Refresh();
-                RunDiagnostics();
+                TriggerSceneUpdate();
             };
 
             Closing += MainWindow_Closing;
-
         }
+
+        #region Undo / Redo UI 
+
+        private void Undo_Click(object sender, RoutedEventArgs e)
+        {
+            if (_state.History.CanUndo)
+            {
+                _state.History.Undo();
+                _state.IsDirty = true; 
+                TriggerSceneUpdate(); 
+            }
+        }
+        private void Redo_Click(object sender, RoutedEventArgs e)
+        {
+            if (_state.History.CanRedo)
+            {
+                _state.History.Redo();
+                _state.IsDirty = true;
+                TriggerSceneUpdate();
+            }
+        }
+        private void TriggerSceneUpdate()
+        {
+            if (_state.IsDirty)
+            {
+                _document.MarkDirty();
+                _state.IsDirty = _document.IsDirty;
+                UpdateWindowTitle();
+            }
+
+            Viewport.Refresh();
+            RunDiagnostics();
+            UpdateUndoRedoUI(); 
+        }
+
+        private void UpdateUndoRedoUI()
+        {
+            if (BtnUndo != null) BtnUndo.IsEnabled = _state.History.CanUndo;
+            if (BtnRedo != null) BtnRedo.IsEnabled = _state.History.CanRedo;
+
+            if (MenuUndo != null) MenuUndo.IsEnabled = _state.History.CanUndo;
+            if (MenuRedo != null) MenuRedo.IsEnabled = _state.History.CanRedo;
+        }
+
+        #endregion
+
         private void New_Click(object sender, RoutedEventArgs e)
         {
             if (!ConfirmSaveIfDirty())
                 return;
 
             _document.New();
-
             SyncStateFromDocument();
+            _state.History.Clear();
 
             Viewport.LoadMap(_document.CurrentMap!);
-
             UpdateWindowTitle();
+            UpdateUndoRedoUI();
             RunDiagnostics();
         }
+
         private void Open_Click(object sender, RoutedEventArgs e)
         {
             if (!ConfirmSaveIfDirty())
@@ -105,14 +143,14 @@ namespace MapMaker.Editor.App
                 return;
 
             _document.Load(dialog.FileName);
-
             SyncStateFromDocument();
-
+            _state.History.Clear(); 
             Viewport.LoadMap(_document.CurrentMap!);
-
             UpdateWindowTitle();
+            UpdateUndoRedoUI();
             RunDiagnostics();
         }
+
         private void Save_Click(object sender, RoutedEventArgs e)
         {
             SaveCurrentDocument();
@@ -197,11 +235,9 @@ namespace MapMaker.Editor.App
                 return;
 
             _state.Grid.SetSize(gridSize);
-
             Viewport.SetGridSize(gridSize);
-
             GridSizeText.Text = $"Grid: {gridSize}";
-            
+
             UpdateGridMenuChecks(item);
         }
         private void UpdateGridMenuChecks(MenuItem selectedItem)
