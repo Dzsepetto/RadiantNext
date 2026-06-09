@@ -78,55 +78,6 @@ namespace MapMaker.Tests
             Assert.Equal(Vector3.Zero, result.Value);
         }
 
-        /*
-
-        [Fact]
-        public void Box_ShouldGenerateEightVertices()
-        {
-            var brush = BrushFactory.CreateBox(
-                new Vector3(0, 0, 0),
-                new Vector3(128, 128, 128),
-                "caulk");
-
-            var vertices = BrushBuilder.GenerateVertices(brush);
-
-            Assert.Equal(8, vertices.Count);
-        }
-
-        [Fact]
-        public void Box_ShouldGeneratePolygonsWithFourVertices()
-        {
-            var brush = BrushFactory.CreateBox(
-                new Vector3(0, 0, 0),
-                new Vector3(128, 128, 128),
-                "caulk");
-
-            var vertices = BrushBuilder.GenerateVertices(brush);         
-            BrushBuilder.GenerateFacePolygons(brush, vertices);
-
-            foreach (var face in brush.Faces)
-            {
-                Assert.NotNull(face.Polygon);
-                Assert.Equal(4, face.Polygon.Vertices.Count);
-            }
-        }
-
-        [Fact]
-        public void Quad_ShouldTriangulateToTwoTriangles()
-        {
-            var polygon = new Polygon3D(new[]
-            {
-                new Vector3(0,0,0),
-                new Vector3(1,0,0),
-                new Vector3(1,1,0),
-                new Vector3(0,1,0),
-            });
-
-            var triangles = Triangulator.Triangulate(polygon);
-
-            Assert.Equal(2, triangles.Count);
-        }
-
-        */
+        
     }
 }

@@ -219,7 +219,8 @@ namespace MapMaker.Editor.Input
 
             var camera = _state.Camera;
 
-            camera.Yaw -= deltaX * MouseSensitivity;
+            // A vízszintes marad normál irányú (+), a függőlegest visszaraktuk normálra (-)
+            camera.Yaw += deltaX * MouseSensitivity;
             camera.Pitch -= deltaY * MouseSensitivity;
             camera.Pitch = Math.Clamp(camera.Pitch, -1.5f, 1.5f);
 

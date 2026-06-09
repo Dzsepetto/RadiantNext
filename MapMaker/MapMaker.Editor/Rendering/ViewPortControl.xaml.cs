@@ -24,9 +24,7 @@ namespace MapMaker.Editor.Rendering
         private readonly Dictionary<MapMaker.Core.Models.Brush, List<GeometryModel3D>> _brushToModels = new();
 
         private EditorState? _state;
-
         private InputController? _input;
-
         private Map? _currentMap;
         private float _gridSize = 16f;
 
@@ -136,8 +134,7 @@ namespace MapMaker.Editor.Rendering
 
             Viewport3DControl.Camera = camera;
 
-            _scene.Children.Add(new AmbientLight(Colors.White));
-
+            LightingRenderer.AddLighting(_scene);
             GridRenderer.AddGrid(_scene, _gridSize, 64);
 
             var visual = new ModelVisual3D
@@ -159,7 +156,6 @@ namespace MapMaker.Editor.Rendering
 
         #endregion
 
-
         #region Scene Rebuild
 
         public void SetGridSize(float gridSize)
@@ -173,10 +169,12 @@ namespace MapMaker.Editor.Rendering
             _currentMap = map;
             RebuildScene();
         }
+
         public void Refresh()
         {
             RebuildScene();
         }
+
         private void RebuildScene()
         {
             _scene.Children.Clear();
@@ -186,9 +184,7 @@ namespace MapMaker.Editor.Rendering
             _modelToBrush.Clear();
             _brushToModels.Clear();
 
-
-            _scene.Children.Add(new AmbientLight(Colors.White));
-
+            LightingRenderer.AddLighting(_scene);
             GridRenderer.AddGrid(_scene, _gridSize, 64);
 
             if (_currentMap != null)

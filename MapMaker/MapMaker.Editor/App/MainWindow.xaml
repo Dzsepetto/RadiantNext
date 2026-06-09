@@ -39,14 +39,12 @@
                         Click="Undo_Click" 
                         Margin="0,0,5,0" 
                         Style="{StaticResource DarkToolbarButtonStyle}"/>
-                
+
                 <Button x:Name="BtnRedo" 
                         Content="↷ Redo" 
                         Click="Redo_Click" 
                         Margin="0,0,10,0" 
                         Style="{StaticResource DarkToolbarButtonStyle}"/>
-
-
 
                 <Separator Margin="0,0,10,0"/>
 
@@ -61,17 +59,17 @@
                         <ColumnDefinition/>
                     </Grid.ColumnDefinitions>
                     <RadioButton Content="Object" 
-                     Grid.Column="0" 
-                     GroupName="SelectionMode" 
-                     IsChecked="True" 
-                     Click="ObjectSelect_Click" 
-                     Style="{StaticResource DarkToolbarToggleButtonStyle}"/>
+                                 Grid.Column="0" 
+                                 GroupName="SelectionMode" 
+                                 IsChecked="True" 
+                                 Click="ObjectSelect_Click" 
+                                 Style="{StaticResource DarkToolbarToggleButtonStyle}"/>
 
-                            <RadioButton Content="Face" 
-                     Grid.Column="1" 
-                     GroupName="SelectionMode" 
-                     Click="FaceSelect_Click" 
-                     Style="{StaticResource DarkToolbarToggleButtonStyle}"/>
+                    <RadioButton Content="Face" 
+                                 Grid.Column="1" 
+                                 GroupName="SelectionMode" 
+                                 Click="FaceSelect_Click" 
+                                 Style="{StaticResource DarkToolbarToggleButtonStyle}"/>
                 </Grid>
 
             </StackPanel>
@@ -87,6 +85,26 @@
 
         <Grid Background="Black">
             <local:ViewPortControl x:Name="Viewport"/>
+
+            <Grid x:Name="LoadingOverlay" Visibility="Collapsed" Background="#80000000">
+                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+
+                    <TextBlock x:Name="LoadingText" 
+                               Text="Loading map..." 
+                               Foreground="White" 
+                               FontSize="20" 
+                               FontWeight="Bold"
+                               HorizontalAlignment="Center" 
+                               Margin="0,0,0,15"/>
+
+                    <ProgressBar IsIndeterminate="True" 
+                                 Width="250" 
+                                 Height="8" 
+                                 Foreground="#007acc" 
+                                 Background="#333333" 
+                                 BorderThickness="0"/>
+                </StackPanel>
+            </Grid>
         </Grid>
 
     </DockPanel>

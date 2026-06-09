@@ -12,7 +12,6 @@ namespace MapMaker.Editor.Rendering
 {
     public static class MapRenderer
     {
-
         public static void AddMap(
             Model3DGroup scene,
             Map map,
@@ -30,7 +29,6 @@ namespace MapMaker.Editor.Rendering
                     if (issues.Count > 0)
                     {
                         Debug.WriteLine("---- BRUSH VALIDATION ----");
-
                         foreach (var issue in issues)
                         {
                             Debug.WriteLine(issue.ToString());
@@ -48,7 +46,6 @@ namespace MapMaker.Editor.Rendering
                             modelToBrush,
                             brushToModels);
                     }
-                   
                 }
             }
         }
@@ -68,6 +65,8 @@ namespace MapMaker.Editor.Rendering
             var triangles = Triangulator.Triangulate(face.Polygon);
             var mesh = new MeshGeometry3D();
 
+            var wpfNormal = new Vector3D(face.Plane.Normal.X, face.Plane.Normal.Y, face.Plane.Normal.Z);
+
             foreach (var tri in triangles)
             {
                 int start = mesh.Positions.Count;
@@ -75,6 +74,10 @@ namespace MapMaker.Editor.Rendering
                 mesh.Positions.Add(new Point3D(tri.A.X, tri.A.Y, tri.A.Z));
                 mesh.Positions.Add(new Point3D(tri.B.X, tri.B.Y, tri.B.Z));
                 mesh.Positions.Add(new Point3D(tri.C.X, tri.C.Y, tri.C.Z));
+
+                mesh.Normals.Add(wpfNormal);
+                mesh.Normals.Add(wpfNormal);
+                mesh.Normals.Add(wpfNormal);
 
                 mesh.TriangleIndices.Add(start + 0);
                 mesh.TriangleIndices.Add(start + 1);
@@ -93,7 +96,6 @@ namespace MapMaker.Editor.Rendering
 
             modelToFace[model] = face;
             faceToModel[face] = model;
-
             modelToBrush[model] = brush;
 
             if (!brushToModels.TryGetValue(brush, out var models))
@@ -103,7 +105,6 @@ namespace MapMaker.Editor.Rendering
             }
 
             models.Add(model);
-
             scene.Children.Add(model);
 
             AddDebugNormal(scene, face);

@@ -1,28 +1,23 @@
-﻿using MapMaker.Core.IO;
-using MapMaker.Editor.Input;
-using MapMaker.Editor.Logging;
-using Microsoft.Win32;
-using System.Numerics;
-using System.Text;
-using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
-using System.ComponentModel;
+﻿using MapMaker.Editor.Diagnostics;
 using MapMaker.Editor.Documents;
 using MapMaker.Editor.Editor;
-using MapMaker.Editor.Diagnostics;
+using MapMaker.Editor.Input;
+using MapMaker.Editor.Logging;
+using MapMaker.Editor.Services;
+using Microsoft.Win32;
+using System.ComponentModel;
+using System.Threading.Tasks;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Media;
+using System.Windows.Threading;
 
 namespace MapMaker.Editor.App
 {
     /// <summary>
     /// Interaction logic for MainWindow.xaml
     /// </summary>
+    /// TODO: Refactore whole file to decrese size and improve readability
     public partial class MainWindow : Window
     {
         private EditorState _state = new();
@@ -30,6 +25,7 @@ namespace MapMaker.Editor.App
         private readonly MapDocumentService _document = new();
         private readonly EditorDiagnosticsService _diagnostics = new();
         private readonly EditorLogService _log = new();
+        private bool _canClose = false;
 
         public MainWindow()
         {
@@ -47,6 +43,22 @@ namespace MapMaker.Editor.App
                 Viewport.ApplyCamera(_state.Camera);
             };
 
+            LoadingService.OnLoadingChanged += (isLoading, message) =>
+            {
+                Dispatcher.Invoke(() =>
+                {
+                    if (isLoading)
+                    {
+                        LoadingText.Text = message;
+                        LoadingOverlay.Visibility = Visibility.Visible;
+                    }
+                    else
+                    {
+                        LoadingOverlay.Visibility = Visibility.Collapsed;
+                    }
+                });
+            };
+
             Loaded += (_, _) =>
             {
                 foreach (var obj in GridMenu.Items)
@@ -61,9 +73,9 @@ namespace MapMaker.Editor.App
                 UpdateUndoRedoUI();
             };
 
-            _input.SceneChanged += () =>
+            _input.SceneChanged += async () =>
             {
-                TriggerSceneUpdate();
+                await TriggerSceneUpdateAsync();
             };
 
             Closing += MainWindow_Closing;
@@ -71,25 +83,27 @@ namespace MapMaker.Editor.App
 
         #region Undo / Redo UI 
 
-        private void Undo_Click(object sender, RoutedEventArgs e)
+        private async void Undo_Click(object sender, RoutedEventArgs e)
         {
             if (_state.History.CanUndo)
             {
                 _state.History.Undo();
-                _state.IsDirty = true; 
-                TriggerSceneUpdate(); 
+                _state.IsDirty = true;
+                await TriggerSceneUpdateAsync();
             }
         }
-        private void Redo_Click(object sender, RoutedEventArgs e)
+
+        private async void Redo_Click(object sender, RoutedEventArgs e)
         {
             if (_state.History.CanRedo)
             {
                 _state.History.Redo();
                 _state.IsDirty = true;
-                TriggerSceneUpdate();
+                await TriggerSceneUpdateAsync();
             }
         }
-        private void TriggerSceneUpdate()
+
+        private async Task TriggerSceneUpdateAsync()
         {
             if (_state.IsDirty)
             {
@@ -99,8 +113,8 @@ namespace MapMaker.Editor.App
             }
 
             Viewport.Refresh();
-            RunDiagnostics();
-            UpdateUndoRedoUI(); 
+            await RunDiagnosticsAsync();
+            UpdateUndoRedoUI();
         }
 
         private void UpdateUndoRedoUI()
@@ -114,24 +128,37 @@ namespace MapMaker.Editor.App
 
         #endregion
 
-        private void New_Click(object sender, RoutedEventArgs e)
+        #region Aszinkron Fájlkezelés és Loading
+
+        private async void New_Click(object sender, RoutedEventArgs e)
         {
-            if (!ConfirmSaveIfDirty())
+            if (!await ConfirmSaveIfDirtyAsync())
                 return;
 
-            _document.New();
-            SyncStateFromDocument();
-            _state.History.Clear();
+           await LoadingService.Show("Creating new map...");
 
-            Viewport.LoadMap(_document.CurrentMap!);
-            UpdateWindowTitle();
-            UpdateUndoRedoUI();
-            RunDiagnostics();
+
+            try
+            {
+                await Task.Run(() => _document.New());
+
+                SyncStateFromDocument();
+                _state.History.Clear();
+
+                Viewport.LoadMap(_document.CurrentMap!);
+                UpdateWindowTitle();
+                UpdateUndoRedoUI();
+                await RunDiagnosticsAsync();
+            }
+            finally
+            {
+                LoadingService.Hide();
+            }
         }
 
-        private void Open_Click(object sender, RoutedEventArgs e)
+        private async void Open_Click(object sender, RoutedEventArgs e)
         {
-            if (!ConfirmSaveIfDirty())
+            if (!await ConfirmSaveIfDirtyAsync())
                 return;
 
             var dialog = new OpenFileDialog
@@ -142,36 +169,58 @@ namespace MapMaker.Editor.App
             if (dialog.ShowDialog() != true)
                 return;
 
-            _document.Load(dialog.FileName);
-            SyncStateFromDocument();
-            _state.History.Clear(); 
-            Viewport.LoadMap(_document.CurrentMap!);
-            UpdateWindowTitle();
-            UpdateUndoRedoUI();
-            RunDiagnostics();
+           await LoadingService.Show("Loading map file, please wait...");
+
+            try
+            {
+                string filePath = dialog.FileName;
+                await Task.Run(() => _document.Load(filePath));
+
+                SyncStateFromDocument();
+                _state.History.Clear();
+
+                Viewport.LoadMap(_document.CurrentMap!);
+
+                UpdateWindowTitle();
+                UpdateUndoRedoUI();
+                await RunDiagnosticsAsync();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    $"Failed to load map.\n\n{ex.Message}",
+                    "Load failed",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+            }
+            finally
+            {
+                LoadingService.Hide();
+            }
         }
 
-        private void Save_Click(object sender, RoutedEventArgs e)
+        private async void Save_Click(object sender, RoutedEventArgs e)
         {
-            SaveCurrentDocument();
-        }
-        private void SaveAs_Click(object sender, RoutedEventArgs e)
-        {
-            SaveCurrentDocumentAs();
+            await SaveCurrentDocumentAsync();
         }
 
-        private bool SaveCurrentDocument()
+        private async void SaveAs_Click(object sender, RoutedEventArgs e)
+        {
+            await SaveCurrentDocumentAsAsync();
+        }
+
+        private async Task<bool> SaveCurrentDocumentAsync()
         {
             if (!_document.HasDocument)
                 return true;
 
             if (_document.NeedsSaveAs)
-                return SaveCurrentDocumentAs();
+                return await SaveCurrentDocumentAsAsync();
 
-            return TrySave(() => _document.Save());
+            return await TrySaveAsync(() => Task.Run(() => _document.Save()), "Saving world data, please wait...");
         }
 
-        private bool SaveCurrentDocumentAs()
+        private async Task<bool> SaveCurrentDocumentAsAsync()
         {
             if (!_document.HasDocument)
                 return true;
@@ -186,14 +235,16 @@ namespace MapMaker.Editor.App
             if (dialog.ShowDialog() != true)
                 return false;
 
-            return TrySave(() => _document.SaveAs(dialog.FileName));
+            return await TrySaveAsync(() => Task.Run(() => _document.SaveAs(dialog.FileName)), "Saving world data as...");
         }
 
-        private bool TrySave(Action saveAction)
+        private async Task<bool> TrySaveAsync(Func<Task> saveAction, string loadingMessage)
         {
+            await LoadingService.Show(loadingMessage);
+
             try
             {
-                saveAction();
+                await saveAction();
 
                 SyncStateFromDocument();
                 UpdateWindowTitle();
@@ -216,57 +267,13 @@ namespace MapMaker.Editor.App
 
                 return false;
             }
-        }
-        private void ObjectSelect_Click(object sender, RoutedEventArgs e)
-        {
-            _state.SelectionMode = Editor.SelectionMode.Object;
-        }
-
-        private void FaceSelect_Click(object sender, RoutedEventArgs e)
-        {
-            _state.SelectionMode = Editor.SelectionMode.Face;
-        }
-        private void GridSize_Click(object sender, RoutedEventArgs e)
-        {
-            if (sender is not MenuItem item)
-                return;
-
-            if (!float.TryParse(item.Header?.ToString(), out var gridSize))
-                return;
-
-            _state.Grid.SetSize(gridSize);
-            Viewport.SetGridSize(gridSize);
-            GridSizeText.Text = $"Grid: {gridSize}";
-
-            UpdateGridMenuChecks(item);
-        }
-        private void UpdateGridMenuChecks(MenuItem selectedItem)
-        {
-            foreach (var obj in GridMenu.Items)
+            finally
             {
-                if (obj is MenuItem menuItem)
-                {
-                    menuItem.IsCheckable = true;
-                    menuItem.IsChecked = false;
-                }
+                LoadingService.Hide();
             }
-
-            selectedItem.IsChecked = true;
-        }
-        private void SelectTool_Click(object sender, RoutedEventArgs e)
-        {
-            _state.CurrentTool = EditorTool.Select;
-        }
-        private void MoveTool_Click(object sender, RoutedEventArgs e)
-        {
-            _state.CurrentTool = EditorTool.Move;
-        }
-        private void RotateTool_Click(object sender, RoutedEventArgs e)
-        {
-            _state.CurrentTool = EditorTool.Rotate;
         }
 
-        private bool ConfirmSaveIfDirty()
+        private async Task<bool> ConfirmSaveIfDirtyAsync()
         {
             if (!_document.IsDirty)
                 return true;
@@ -283,14 +290,85 @@ namespace MapMaker.Editor.App
             if (result == MessageBoxResult.No)
                 return true;
 
-            return SaveCurrentDocument();
+            return await SaveCurrentDocumentAsync();
         }
 
-        private void MainWindow_Closing(object? sender, CancelEventArgs e)
+        private async void MainWindow_Closing(object? sender, CancelEventArgs e)
         {
-            if (!ConfirmSaveIfDirty())
-                e.Cancel = true;
+            if (!_document.IsDirty || _canClose)
+                return;
+
+            e.Cancel = true;
+
+            bool shouldClose = await ConfirmSaveIfDirtyAsync();
+            if (shouldClose)
+            {
+                _canClose = true;
+                Close();
+            }
         }
+
+        #endregion
+
+        #region Eszközök és UI Kezelők
+
+        private void ObjectSelect_Click(object sender, RoutedEventArgs e)
+        {
+            _state.SelectionMode = Editor.SelectionMode.Object;
+        }
+
+        private void FaceSelect_Click(object sender, RoutedEventArgs e)
+        {
+            _state.SelectionMode = Editor.SelectionMode.Face;
+        }
+
+        private void GridSize_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is not MenuItem item)
+                return;
+
+            if (!float.TryParse(item.Header?.ToString(), out var gridSize))
+                return;
+
+            _state.Grid.SetSize(gridSize);
+            Viewport.SetGridSize(gridSize);
+            GridSizeText.Text = $"Grid: {gridSize}";
+
+            UpdateGridMenuChecks(item);
+        }
+
+        private void UpdateGridMenuChecks(MenuItem selectedItem)
+        {
+            foreach (var obj in GridMenu.Items)
+            {
+                if (obj is MenuItem menuItem)
+                {
+                    menuItem.IsCheckable = true;
+                    menuItem.IsChecked = false;
+                }
+            }
+
+            selectedItem.IsChecked = true;
+        }
+
+        private void SelectTool_Click(object sender, RoutedEventArgs e)
+        {
+            _state.CurrentTool = EditorTool.Select;
+        }
+
+        private void MoveTool_Click(object sender, RoutedEventArgs e)
+        {
+            _state.CurrentTool = EditorTool.Move;
+        }
+
+        private void RotateTool_Click(object sender, RoutedEventArgs e)
+        {
+            _state.CurrentTool = EditorTool.Rotate;
+        }
+
+        #endregion
+
+        #region Állapot és Diagnosztika
 
         private void SyncStateFromDocument()
         {
@@ -300,6 +378,7 @@ namespace MapMaker.Editor.App
             _state.CurrentFilePath = _document.FilePath;
             _state.IsDirty = _document.IsDirty;
         }
+
         private void UpdateWindowTitle()
         {
             var fileName = string.IsNullOrWhiteSpace(_document.FilePath)
@@ -310,10 +389,16 @@ namespace MapMaker.Editor.App
 
             Title = $"MapMaker Radiant - {fileName}{dirtyMark}";
         }
-        private void RunDiagnostics()
+
+        private async Task RunDiagnosticsAsync()
         {
-            var result = _diagnostics.Analyze(_document.CurrentMap);
+            var currentMap = _document.CurrentMap;
+            if (currentMap == null) return;
+
+            var result = await Task.Run(() => _diagnostics.Analyze(currentMap));
             _log.LogDiagnostics(result);
         }
+
+        #endregion
     }
 }
