@@ -2,7 +2,7 @@
 using MapMaker.Editor.Commands;
 using MapMaker.Editor.Editor;
 using MapMaker.Editor.Tools;
-using System;
+using System.Linq;
 using System.Numerics;
 using System.Windows;
 using System.Windows.Input;
@@ -134,9 +134,7 @@ namespace MapMaker.Editor.Input
             {
                 _activeTool.Cancel();
                 _activeTool = null;
-
                 _state.CurrentTool = EditorTool.Select;
-
                 e.Handled = true;
                 return;
             }
@@ -144,15 +142,14 @@ namespace MapMaker.Editor.Input
             if (e.ChangedButton == MouseButton.Left)
             {
                 if (_state.CurrentTool == EditorTool.Move &&
-                    _state.SelectedBrush != null)
+                    (_state.SelectedBrush != null || _state.SelectedFace != null))
                 {
                     _activeTool = _moveTool;
                     _activeTool.OnMouseDown(e);
                     return;
                 }
 
-                if (_state.CurrentTool == EditorTool.Rotate &&
-                    _state.SelectedBrush != null)
+                if (_state.CurrentTool == EditorTool.Rotate && _state.SelectedBrush != null)
                 {
                     _activeTool = _rotateTool;
                     _activeTool.OnMouseDown(e);
@@ -164,9 +161,7 @@ namespace MapMaker.Editor.Input
             {
                 _rightMouseDown = true;
                 _lastMousePos = e.GetPosition(_viewport);
-
                 Mouse.Capture(_viewport);
-
                 e.Handled = true;
             }
         }
@@ -273,20 +268,22 @@ namespace MapMaker.Editor.Input
                 var after = brush.Faces.Select(face => new BrushFaceSnapshot(face)).ToList();
 
                 _state.History.PushExecuted(new MoveBrushCommand(brush, before, after));
-
                 _state.IsDirty = true;
 
                 SceneChanged?.Invoke(brush);
-
                 e.Handled = true;
             }
             else if (_state.SelectedFace != null)
             {
-                FaceMover.Move(_state.SelectedFace, delta, step);
-
+                var targetFace = _state.SelectedFace;
+                FaceMover.Move(targetFace, delta, step);
                 _state.IsDirty = true;
 
-                SceneChanged?.Invoke(null);
+                var parentBrush = _state.CurrentMap?.Entities
+                    .SelectMany(entity => entity.Brushes)
+                    .FirstOrDefault(b => b.Faces.Contains(targetFace));
+
+                SceneChanged?.Invoke(parentBrush);
 
                 e.Handled = true;
             }
