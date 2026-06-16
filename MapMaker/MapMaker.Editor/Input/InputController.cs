@@ -27,7 +27,7 @@ namespace MapMaker.Editor.Input
         private readonly RotateTool _rotateTool;
         private IEditorTool? _activeTool;
 
-        public event Action? SceneChanged;
+        public event Action<object?>? SceneChanged;
 
         public InputController(EditorState state)
         {
@@ -36,11 +36,11 @@ namespace MapMaker.Editor.Input
             _moveTool = new MoveTool(_state);
             _rotateTool = new RotateTool(_state);
 
-            _moveTool.SceneChanged += () => SceneChanged?.Invoke();
-            _rotateTool.SceneChanged += () => SceneChanged?.Invoke();
+            _moveTool.SceneChanged += () => SceneChanged?.Invoke(null);
+            _rotateTool.SceneChanged += () => SceneChanged?.Invoke(null);
 
-            _moveTool.Committed += () => SceneChanged?.Invoke();
-            _rotateTool.Committed += () => SceneChanged?.Invoke();
+            _moveTool.Committed += () => SceneChanged?.Invoke(null);
+            _rotateTool.Committed += () => SceneChanged?.Invoke(null);
         }
 
         public void SetViewport(IInputElement element)
@@ -68,7 +68,7 @@ namespace MapMaker.Editor.Input
                 _state.History.Undo();
                 _state.IsDirty = true;
 
-                SceneChanged?.Invoke();
+                SceneChanged?.Invoke(null);
 
                 e.Handled = true;
                 return;
@@ -79,7 +79,7 @@ namespace MapMaker.Editor.Input
                 _state.History.Redo();
                 _state.IsDirty = true;
 
-                SceneChanged?.Invoke();
+                SceneChanged?.Invoke(null);
 
                 e.Handled = true;
                 return;
@@ -219,7 +219,6 @@ namespace MapMaker.Editor.Input
 
             var camera = _state.Camera;
 
-            // A vízszintes marad normál irányú (+), a függőlegest visszaraktuk normálra (-)
             camera.Yaw += deltaX * MouseSensitivity;
             camera.Pitch -= deltaY * MouseSensitivity;
             camera.Pitch = Math.Clamp(camera.Pitch, -1.5f, 1.5f);
@@ -250,34 +249,16 @@ namespace MapMaker.Editor.Input
                 return;
 
             float step = _state.Grid.Size;
-
             Vector3 delta = Vector3.Zero;
 
             switch (e.Key)
             {
-                case Key.Left:
-                    delta = new Vector3(-step, 0, 0);
-                    break;
-
-                case Key.Right:
-                    delta = new Vector3(step, 0, 0);
-                    break;
-
-                case Key.Up:
-                    delta = new Vector3(0, step, 0);
-                    break;
-
-                case Key.Down:
-                    delta = new Vector3(0, -step, 0);
-                    break;
-
-                case Key.PageUp:
-                    delta = new Vector3(0, 0, step);
-                    break;
-
-                case Key.PageDown:
-                    delta = new Vector3(0, 0, -step);
-                    break;
+                case Key.Left: delta = new Vector3(-step, 0, 0); break;
+                case Key.Right: delta = new Vector3(step, 0, 0); break;
+                case Key.Up: delta = new Vector3(0, step, 0); break;
+                case Key.Down: delta = new Vector3(0, -step, 0); break;
+                case Key.PageUp: delta = new Vector3(0, 0, step); break;
+                case Key.PageDown: delta = new Vector3(0, 0, -step); break;
             }
 
             if (delta == Vector3.Zero)
@@ -287,33 +268,28 @@ namespace MapMaker.Editor.Input
             {
                 var brush = _state.SelectedBrush;
 
-                var before = brush.Faces
-                    .Select(face => new BrushFaceSnapshot(face))
-                    .ToList();
-
+                var before = brush.Faces.Select(face => new BrushFaceSnapshot(face)).ToList();
                 BrushMover.Move(brush, delta, step);
+                var after = brush.Faces.Select(face => new BrushFaceSnapshot(face)).ToList();
 
-                var after = brush.Faces
-                    .Select(face => new BrushFaceSnapshot(face))
-                    .ToList();
+                _state.History.PushExecuted(new MoveBrushCommand(brush, before, after));
 
-                _state.History.PushExecuted(
-                    new MoveBrushCommand(brush, before, after));
+                _state.IsDirty = true;
+
+                SceneChanged?.Invoke(brush);
+
+                e.Handled = true;
             }
             else if (_state.SelectedFace != null)
             {
                 FaceMover.Move(_state.SelectedFace, delta, step);
+
+                _state.IsDirty = true;
+
+                SceneChanged?.Invoke(null);
+
+                e.Handled = true;
             }
-            else
-            {
-                return;
-            }
-
-            _state.IsDirty = true;
-
-            SceneChanged?.Invoke();
-
-            e.Handled = true;
         }
     }
 }

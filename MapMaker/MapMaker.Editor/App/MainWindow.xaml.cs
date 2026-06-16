@@ -73,9 +73,9 @@ namespace MapMaker.Editor.App
                 UpdateUndoRedoUI();
             };
 
-            _input.SceneChanged += async () =>
+            _input.SceneChanged += async (modifiedObject) =>
             {
-                await TriggerSceneUpdateAsync();
+                await TriggerSceneUpdateAsync(modifiedObject);
             };
 
             Closing += MainWindow_Closing;
@@ -89,7 +89,8 @@ namespace MapMaker.Editor.App
             {
                 _state.History.Undo();
                 _state.IsDirty = true;
-                await TriggerSceneUpdateAsync();
+
+                await TriggerSceneUpdateAsync(null);
             }
         }
 
@@ -99,11 +100,14 @@ namespace MapMaker.Editor.App
             {
                 _state.History.Redo();
                 _state.IsDirty = true;
-                await TriggerSceneUpdateAsync();
+
+                await TriggerSceneUpdateAsync(null);
             }
         }
 
-        private async Task TriggerSceneUpdateAsync()
+        #endregion
+
+        private async Task TriggerSceneUpdateAsync(object? modifiedObject)
         {
             if (_state.IsDirty)
             {
@@ -112,7 +116,8 @@ namespace MapMaker.Editor.App
                 UpdateWindowTitle();
             }
 
-            Viewport.Refresh();
+            Viewport.RefreshModifiedObject(modifiedObject);
+
             await RunDiagnosticsAsync();
             UpdateUndoRedoUI();
         }
@@ -126,7 +131,6 @@ namespace MapMaker.Editor.App
             if (MenuRedo != null) MenuRedo.IsEnabled = _state.History.CanRedo;
         }
 
-        #endregion
 
         #region Aszinkron Fájlkezelés és Loading
 

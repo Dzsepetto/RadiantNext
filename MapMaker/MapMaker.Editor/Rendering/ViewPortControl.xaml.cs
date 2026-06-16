@@ -11,12 +11,15 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Media3D;
 using MapMaker.Editor.Selection;
+using System.Collections.Generic;
 
 namespace MapMaker.Editor.Rendering
 {
     public partial class ViewPortControl : UserControl
     {
         private readonly Model3DGroup _scene = new();
+        private readonly Model3DGroup _staticGroup = new();     
+        private readonly Model3DGroup _mapGeometryGroup = new();
 
         private readonly Dictionary<GeometryModel3D, Face> _modelToFace = new();
         private readonly Dictionary<Face, GeometryModel3D> _faceToModel = new();
@@ -31,7 +34,6 @@ namespace MapMaker.Editor.Rendering
         private ViewportPicker? _picker;
         private SelectionService? _selectionService;
         private SelectionVisualService? _selectionVisualService;
-
         public ViewPortControl()
         {
             InitializeComponent();
@@ -49,6 +51,8 @@ namespace MapMaker.Editor.Rendering
 
             _input.SetViewport(this);
 
+            _input.SceneChanged += OnSceneChanged;
+
             _picker = new ViewportPicker(
                 state,
                 Viewport3DControl,
@@ -62,6 +66,11 @@ namespace MapMaker.Editor.Rendering
                 _modelToFace,
                 _faceToModel,
                 _brushToModels);
+        }
+
+        private void OnSceneChanged(object? modifiedObject)
+        {
+            RefreshModifiedObject(modifiedObject);
         }
 
         #region Mouse Handling
@@ -120,7 +129,7 @@ namespace MapMaker.Editor.Rendering
 
         #endregion
 
-        #region Scene
+        #region Scene Setup & Camera
 
         private void SetupScene()
         {
@@ -134,8 +143,11 @@ namespace MapMaker.Editor.Rendering
 
             Viewport3DControl.Camera = camera;
 
-            LightingRenderer.AddLighting(_scene);
-            GridRenderer.AddGrid(_scene, _gridSize, 64);
+            _scene.Children.Add(_staticGroup);
+            _scene.Children.Add(_mapGeometryGroup);
+
+            LightingRenderer.AddLighting(_staticGroup);
+            GridRenderer.AddGrid(_staticGroup, _gridSize, 64);
 
             var visual = new ModelVisual3D
             {
@@ -147,53 +159,74 @@ namespace MapMaker.Editor.Rendering
 
         public void ApplyCamera(Camera3D cam)
         {
-            var camera = (PerspectiveCamera)Viewport3DControl.Camera;
-
-            camera.Position = new Point3D(cam.Position.X, cam.Position.Y, cam.Position.Z);
-            camera.LookDirection = new Vector3D(cam.Forward.X, cam.Forward.Y, cam.Forward.Z);
-            camera.UpDirection = new Vector3D(0, 0, 1);
+            if (Viewport3DControl.Camera is PerspectiveCamera camera)
+            {
+                camera.Position = new Point3D(cam.Position.X, cam.Position.Y, cam.Position.Z);
+                camera.LookDirection = new Vector3D(cam.Forward.X, cam.Forward.Y, cam.Forward.Z);
+                camera.UpDirection = new Vector3D(0, 0, 1);
+            }
         }
 
         #endregion
 
-        #region Scene Rebuild
+        #region Szelektív és Teljes Újraépítés
 
         public void SetGridSize(float gridSize)
         {
             _gridSize = gridSize;
-            RebuildScene();
+
+            _staticGroup.Children.Clear();
+            LightingRenderer.AddLighting(_staticGroup);
+            GridRenderer.AddGrid(_staticGroup, _gridSize, 64);
         }
 
         public void LoadMap(Map map)
         {
             _currentMap = map;
-            RebuildScene();
+            RebuildWholeScene();
         }
 
         public void Refresh()
         {
-            RebuildScene();
+            RebuildWholeScene();
         }
-
-        private void RebuildScene()
+        private void RebuildWholeScene()
         {
-            _scene.Children.Clear();
+            _mapGeometryGroup.Children.Clear();
 
             _modelToFace.Clear();
             _faceToModel.Clear();
             _modelToBrush.Clear();
             _brushToModels.Clear();
 
-            LightingRenderer.AddLighting(_scene);
-            GridRenderer.AddGrid(_scene, _gridSize, 64);
-
             if (_currentMap != null)
             {
-                MapRenderer.AddMap(_scene, _currentMap, _modelToFace, _faceToModel, _modelToBrush, _brushToModels);
+                MapRenderer.AddMap(_mapGeometryGroup, _currentMap, _modelToFace, _faceToModel, _modelToBrush, _brushToModels);
             }
 
             _selectionVisualService?.ApplySelection();
         }
+
+        public void RefreshModifiedObject(object? modifiedObject)
+        {
+            if (modifiedObject is MapMaker.Core.Models.Brush brush)
+            {
+                MapRenderer.RefreshBrush(
+                    _mapGeometryGroup,
+                    brush,
+                    _modelToFace,
+                    _faceToModel,
+                    _modelToBrush,
+                    _brushToModels);
+
+                _selectionVisualService?.ApplySelection();
+            }
+            else
+            {
+                RebuildWholeScene();
+            }
+        }
+
         #endregion
     }
 }

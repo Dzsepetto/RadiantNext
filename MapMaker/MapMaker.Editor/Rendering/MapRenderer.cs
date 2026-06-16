@@ -2,6 +2,8 @@
 using MapMaker.Core.Geometry;
 using MapMaker.Core.Models;
 using MapMaker.Core.Validation;
+using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Numerics;
 using System.Windows.Media;
@@ -46,6 +48,52 @@ namespace MapMaker.Editor.Rendering
                             modelToBrush,
                             brushToModels);
                     }
+                }
+            }
+        }
+
+        public static void RefreshBrush(
+            Model3DGroup scene,
+            MapBrush brush,
+            Dictionary<GeometryModel3D, Face> modelToFace,
+            Dictionary<Face, GeometryModel3D> faceToModel,
+            Dictionary<GeometryModel3D, MapBrush> modelToBrush,
+            Dictionary<MapBrush, List<GeometryModel3D>> brushToModels)
+        {
+            if (brushToModels.TryGetValue(brush, out var oldModels))
+            {
+                foreach (var oldModel in oldModels)
+                {
+                    scene.Children.Remove(oldModel);
+
+                    if (modelToFace.TryGetValue(oldModel, out var face))
+                    {
+                        faceToModel.Remove(face);
+                    }
+                    modelToFace.Remove(oldModel);
+                    modelToBrush.Remove(oldModel);
+                }
+                oldModels.Clear();
+            }
+            else
+            {
+                oldModels = new List<GeometryModel3D>();
+                brushToModels[brush] = oldModels;
+            }
+
+            var issues = BrushValidator.Validate(brush);
+            if (issues.Count == 0)
+            {
+                foreach (var face in brush.Faces)
+                {
+                    AddFaceModel(
+                        scene,
+                        brush,
+                        face,
+                        modelToFace,
+                        faceToModel,
+                        modelToBrush,
+                        brushToModels);
                 }
             }
         }
