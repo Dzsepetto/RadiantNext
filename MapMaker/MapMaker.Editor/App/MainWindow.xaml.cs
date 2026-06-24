@@ -6,6 +6,7 @@ using MapMaker.Editor.Logging;
 using MapMaker.Editor.Services;
 using Microsoft.Win32;
 using System.ComponentModel;
+using System.Numerics;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -324,6 +325,87 @@ namespace MapMaker.Editor.App
         private void FaceSelect_Click(object sender, RoutedEventArgs e)
         {
             _state.SelectionMode = Editor.SelectionMode.Face;
+        }
+        private async void CreateBox_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                System.Diagnostics.Debug.WriteLine("=== CREATE BOX START ===");
+
+                if (_state == null)
+                {
+                    MessageBox.Show("Hiba: _state null!");
+                    return;
+                }
+
+                if (_state.CurrentMap == null)
+                {
+                    MessageBox.Show("Hiba: Nincs betöltve/létrehozva térkép! (_state.CurrentMap null). Nyiss egy újat a File -> New menüvel!");
+                    return;
+                }
+
+                if (_state.Camera == null)
+                {
+                    MessageBox.Show("Hiba: _state.Camera null!");
+                    return;
+                }
+
+                float gridSize = _state.Grid.Size > 0 ? _state.Grid.Size : 64f;
+                System.Diagnostics.Debug.WriteLine($"Grid size: {gridSize}");
+
+                // Pozíció számítás
+                Vector3 spawnPos = _state.Camera.Position + _state.Camera.Forward * 200f;
+                spawnPos.X = MathF.Round(spawnPos.X / gridSize) * gridSize;
+                spawnPos.Y = MathF.Round(spawnPos.Y / gridSize) * gridSize;
+                spawnPos.Z = MathF.Round(spawnPos.Z / gridSize) * gridSize;
+                System.Diagnostics.Debug.WriteLine($"Spawn position calculated: {spawnPos}");
+
+                float half = gridSize / 2f;
+                Vector3 minBounds = spawnPos - new Vector3(half, half, half);
+                Vector3 maxBounds = spawnPos + new Vector3(half, half, half);
+
+                // Gyártás
+                System.Diagnostics.Debug.WriteLine("Calling BrushFactory.CreateBox...");
+                var newBrush = MapMaker.Core.BrushFactory.CreateBox(minBounds, maxBounds, "textures/default");
+
+                if (newBrush == null)
+                {
+                    MessageBox.Show("Hiba: A BrushFactory null-t adott vissza!");
+                    return;
+                }
+                System.Diagnostics.Debug.WriteLine($"Brush created successfully. Faces count: {newBrush.Faces?.Count}");
+
+                // Entitás ellenőrzés
+                System.Diagnostics.Debug.WriteLine($"CurrentMap Entities count: {_state.CurrentMap.Entities.Count}");
+                if (_state.CurrentMap.Entities.Count == 0)
+                {
+                    MessageBox.Show("Hiba: A térképnek nincs egyetlen Entitása (pl. worldspawn) sem, aminek átadhatnánk a Brusz-t!");
+                    return;
+                }
+
+                var targetEntity = _state.CurrentMap.Entities[0];
+                if (targetEntity.Brushes == null)
+                {
+                    MessageBox.Show("Hiba: targetEntity.Brushes lista nincs inicializálva (null)!");
+                    return;
+                }
+
+                // Hozzáadás
+                _state.SelectedBrush = newBrush;
+                _state.SelectedFace = null;
+                targetEntity.Brushes.Add(newBrush);
+                _state.IsDirty = true;
+                System.Diagnostics.Debug.WriteLine("Brush added to entity. Triggering update...");
+
+                // Jelenet frissítés
+                await TriggerSceneUpdateAsync(newBrush);
+                System.Diagnostics.Debug.WriteLine("=== CREATE BOX END (SUCCESS) ===");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"CRITICAL ERROR in CreateBox_Click: {ex}");
+                MessageBox.Show($"Kivétel történt a kocka létrehozásakor:\n\n{ex.Message}\n\nRészletek a VS Output ablakban.");
+            }
         }
 
         private void GridSize_Click(object sender, RoutedEventArgs e)

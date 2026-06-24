@@ -80,6 +80,7 @@
                 <RadioButton Content="Select" GroupName="EditorTool" IsChecked="True" Click="SelectTool_Click" Style="{StaticResource {x:Type ToggleButton}}"/>
                 <RadioButton Content="Move" GroupName="EditorTool" Click="MoveTool_Click" Style="{StaticResource {x:Type ToggleButton}}"/>
                 <RadioButton Content="Rotate" GroupName="EditorTool" Click="RotateTool_Click" Style="{StaticResource {x:Type ToggleButton}}"/>
+                <Button Content="Create Box" Click="CreateBox_Click" />
             </StackPanel>
         </Border>
 

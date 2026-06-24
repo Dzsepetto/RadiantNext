@@ -16,7 +16,8 @@ namespace MapMaker.Editor.Editor
         Select,
         Move,
         Brush,
-        Rotate
+        Rotate,
+        Block
     }
 
     public sealed class EditorState
